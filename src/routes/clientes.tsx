@@ -202,15 +202,10 @@ function ClienteDialog({
 }) {
   const [form, setForm] = useState<Partial<Cliente>>({});
 
-  // reset form when dialog opens
-  useState(() => {});
-  // Use key-based reset via parent? Easier: re-init on open change
-  if (open && form && cliente?.id !== (form as any).id && cliente) {
-    setForm(cliente);
-  }
-  if (open && !cliente && (form as any).id) {
-    setForm({});
-  }
+  useEffect(() => {
+    if (open) setForm(cliente ?? {});
+  }, [open, cliente]);
+
 
   const f = (k: keyof Cliente) => (e: any) => setForm({ ...form, [k]: e.target.value });
 
