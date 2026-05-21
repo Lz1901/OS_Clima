@@ -167,7 +167,7 @@ function ClientesPage() {
         open={open}
         onOpenChange={setOpen}
         cliente={editing}
-        onSave={(f) => save.mutate(f)}
+        onSave={(f: any) => save.mutate(f)}
         saving={save.isPending}
       />
 
