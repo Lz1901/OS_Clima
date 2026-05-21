@@ -9,15 +9,41 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as UnidadesRouteImport } from './routes/unidades'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
+import { Route as PmocsRouteImport } from './routes/pmocs'
+import { Route as NotificacoesRouteImport } from './routes/notificacoes'
+import { Route as EquipamentosRouteImport } from './routes/equipamentos'
 import { Route as DashboardRouteImport } from './routes/dashboard'
+import { Route as ConfiguracoesRouteImport } from './routes/configuracoes'
 import { Route as ClientesRouteImport } from './routes/clientes'
+import { Route as ChecklistsRouteImport } from './routes/checklists'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as IndexRouteImport } from './routes/index'
 
+const UnidadesRoute = UnidadesRouteImport.update({
+  id: '/unidades',
+  path: '/unidades',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ResetPasswordRoute = ResetPasswordRouteImport.update({
   id: '/reset-password',
   path: '/reset-password',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PmocsRoute = PmocsRouteImport.update({
+  id: '/pmocs',
+  path: '/pmocs',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const NotificacoesRoute = NotificacoesRouteImport.update({
+  id: '/notificacoes',
+  path: '/notificacoes',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const EquipamentosRoute = EquipamentosRouteImport.update({
+  id: '/equipamentos',
+  path: '/equipamentos',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DashboardRoute = DashboardRouteImport.update({
@@ -25,9 +51,19 @@ const DashboardRoute = DashboardRouteImport.update({
   path: '/dashboard',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ConfiguracoesRoute = ConfiguracoesRouteImport.update({
+  id: '/configuracoes',
+  path: '/configuracoes',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ClientesRoute = ClientesRouteImport.update({
   id: '/clientes',
   path: '/clientes',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ChecklistsRoute = ChecklistsRouteImport.update({
+  id: '/checklists',
+  path: '/checklists',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthRoute = AuthRouteImport.update({
@@ -44,54 +80,134 @@ const IndexRoute = IndexRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/checklists': typeof ChecklistsRoute
   '/clientes': typeof ClientesRoute
+  '/configuracoes': typeof ConfiguracoesRoute
   '/dashboard': typeof DashboardRoute
+  '/equipamentos': typeof EquipamentosRoute
+  '/notificacoes': typeof NotificacoesRoute
+  '/pmocs': typeof PmocsRoute
   '/reset-password': typeof ResetPasswordRoute
+  '/unidades': typeof UnidadesRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/checklists': typeof ChecklistsRoute
   '/clientes': typeof ClientesRoute
+  '/configuracoes': typeof ConfiguracoesRoute
   '/dashboard': typeof DashboardRoute
+  '/equipamentos': typeof EquipamentosRoute
+  '/notificacoes': typeof NotificacoesRoute
+  '/pmocs': typeof PmocsRoute
   '/reset-password': typeof ResetPasswordRoute
+  '/unidades': typeof UnidadesRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/checklists': typeof ChecklistsRoute
   '/clientes': typeof ClientesRoute
+  '/configuracoes': typeof ConfiguracoesRoute
   '/dashboard': typeof DashboardRoute
+  '/equipamentos': typeof EquipamentosRoute
+  '/notificacoes': typeof NotificacoesRoute
+  '/pmocs': typeof PmocsRoute
   '/reset-password': typeof ResetPasswordRoute
+  '/unidades': typeof UnidadesRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/auth' | '/clientes' | '/dashboard' | '/reset-password'
+  fullPaths:
+    | '/'
+    | '/auth'
+    | '/checklists'
+    | '/clientes'
+    | '/configuracoes'
+    | '/dashboard'
+    | '/equipamentos'
+    | '/notificacoes'
+    | '/pmocs'
+    | '/reset-password'
+    | '/unidades'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/auth' | '/clientes' | '/dashboard' | '/reset-password'
+  to:
+    | '/'
+    | '/auth'
+    | '/checklists'
+    | '/clientes'
+    | '/configuracoes'
+    | '/dashboard'
+    | '/equipamentos'
+    | '/notificacoes'
+    | '/pmocs'
+    | '/reset-password'
+    | '/unidades'
   id:
     | '__root__'
     | '/'
     | '/auth'
+    | '/checklists'
     | '/clientes'
+    | '/configuracoes'
     | '/dashboard'
+    | '/equipamentos'
+    | '/notificacoes'
+    | '/pmocs'
     | '/reset-password'
+    | '/unidades'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthRoute: typeof AuthRoute
+  ChecklistsRoute: typeof ChecklistsRoute
   ClientesRoute: typeof ClientesRoute
+  ConfiguracoesRoute: typeof ConfiguracoesRoute
   DashboardRoute: typeof DashboardRoute
+  EquipamentosRoute: typeof EquipamentosRoute
+  NotificacoesRoute: typeof NotificacoesRoute
+  PmocsRoute: typeof PmocsRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
+  UnidadesRoute: typeof UnidadesRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/unidades': {
+      id: '/unidades'
+      path: '/unidades'
+      fullPath: '/unidades'
+      preLoaderRoute: typeof UnidadesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/reset-password': {
       id: '/reset-password'
       path: '/reset-password'
       fullPath: '/reset-password'
       preLoaderRoute: typeof ResetPasswordRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/pmocs': {
+      id: '/pmocs'
+      path: '/pmocs'
+      fullPath: '/pmocs'
+      preLoaderRoute: typeof PmocsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/notificacoes': {
+      id: '/notificacoes'
+      path: '/notificacoes'
+      fullPath: '/notificacoes'
+      preLoaderRoute: typeof NotificacoesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/equipamentos': {
+      id: '/equipamentos'
+      path: '/equipamentos'
+      fullPath: '/equipamentos'
+      preLoaderRoute: typeof EquipamentosRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/dashboard': {
@@ -101,11 +217,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/configuracoes': {
+      id: '/configuracoes'
+      path: '/configuracoes'
+      fullPath: '/configuracoes'
+      preLoaderRoute: typeof ConfiguracoesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/clientes': {
       id: '/clientes'
       path: '/clientes'
       fullPath: '/clientes'
       preLoaderRoute: typeof ClientesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/checklists': {
+      id: '/checklists'
+      path: '/checklists'
+      fullPath: '/checklists'
+      preLoaderRoute: typeof ChecklistsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/auth': {
@@ -128,10 +258,26 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthRoute: AuthRoute,
+  ChecklistsRoute: ChecklistsRoute,
   ClientesRoute: ClientesRoute,
+  ConfiguracoesRoute: ConfiguracoesRoute,
   DashboardRoute: DashboardRoute,
+  EquipamentosRoute: EquipamentosRoute,
+  NotificacoesRoute: NotificacoesRoute,
+  PmocsRoute: PmocsRoute,
   ResetPasswordRoute: ResetPasswordRoute,
+  UnidadesRoute: UnidadesRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
