@@ -10,6 +10,7 @@ import {
   Bell,
   LogOut,
   Snowflake,
+  Activity,
 } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { cn } from "@/lib/utils";
@@ -22,6 +23,7 @@ const nav = [
   { to: "/unidades", label: "Unidades", icon: Building2 },
   { to: "/equipamentos", label: "Equipamentos", icon: Wrench },
   { to: "/checklists", label: "Checklists", icon: ListChecks },
+  { to: "/logs", label: "Atividade", icon: Activity },
   { to: "/notificacoes", label: "Notificações", icon: Bell },
   { to: "/configuracoes", label: "Configurações", icon: Settings },
 ];
