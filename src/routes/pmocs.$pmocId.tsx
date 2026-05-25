@@ -2,7 +2,7 @@ import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useState, useMemo } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
-  ArrowLeft, CheckCircle2, Wrench, FileText, Mail, Loader2, Camera, X,
+  ArrowLeft, CheckCircle2, Wrench, FileText, Mail, Loader2, Camera,
 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -419,5 +419,3 @@ function FinalizedView({ pmoc, onBack }: { pmoc: any; onBack: () => void }) {
   );
 }
 
-// Avoid unused-import warning for X
-void X;
