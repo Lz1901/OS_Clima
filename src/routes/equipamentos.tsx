@@ -1,7 +1,7 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Plus, Pencil, Trash2, Wrench, Search } from "lucide-react";
+import { Plus, Pencil, Trash2, Wrench, Search, QrCode } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
@@ -134,8 +134,13 @@ function EquipamentosPage() {
               {eq.localizacao && <p>Local: {eq.localizacao}</p>}
             </div>
             <div className="flex gap-1 mt-3">
-              <Button variant="ghost" size="sm" className="flex-1" onClick={() => { setEditing(eq); setOpen(true); }}>
-                <Pencil className="h-3 w-3 mr-1" /> Editar
+              <Button variant="ghost" size="sm" className="flex-1" asChild>
+                <Link to="/equipamentos/$equipamentoId" params={{ equipamentoId: eq.id }}>
+                  <QrCode className="h-3 w-3 mr-1" /> Ver / QR
+                </Link>
+              </Button>
+              <Button variant="ghost" size="sm" onClick={() => { setEditing(eq); setOpen(true); }}>
+                <Pencil className="h-3 w-3" />
               </Button>
               <Button variant="ghost" size="sm" onClick={() => confirm("Remover?") && remove.mutate(eq.id)}>
                 <Trash2 className="h-3 w-3" />
