@@ -149,7 +149,7 @@ function UnidadesPage() {
         onOpenChange={setOpen}
         unidade={editing}
         clientes={clientes as any}
-        onSave={(f: any) => save.mutate(f)}
+        onSave={(form: any) => save.mutate(form)}
         saving={save.isPending}
       />
     </>
