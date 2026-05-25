@@ -5,7 +5,7 @@ export async function logActivity(
   acao: string,
   entidade: string,
   entidadeId?: string,
-  detalhes?: Record<string, unknown>
+  detalhes?: Record<string, any>
 ) {
   const { data: { user } } = await supabase.auth.getUser();
   await supabase.from("activity_logs").insert({
@@ -14,6 +14,6 @@ export async function logActivity(
     acao,
     entidade,
     entidade_id: entidadeId,
-    detalhes: detalhes ?? {},
+    detalhes: (detalhes ?? {}) as any,
   });
 }
