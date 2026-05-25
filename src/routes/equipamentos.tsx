@@ -155,7 +155,7 @@ function EquipamentosPage() {
         onOpenChange={setOpen}
         equipamento={editing}
         unidades={unidades as any}
-        onSave={(f: any) => save.mutate(f)}
+        onSave={(form: any) => save.mutate(form)}
         saving={save.isPending}
       />
     </>
