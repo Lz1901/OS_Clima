@@ -24,6 +24,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as ValidarEquipamentoIdRouteImport } from './routes/validar.$equipamentoId'
 import { Route as PmocsPmocIdRouteImport } from './routes/pmocs.$pmocId'
 import { Route as EquipamentosEquipamentoIdRouteImport } from './routes/equipamentos.$equipamentoId'
+import { Route as ApiPublicEquipamentoEquipamentoIdRouteImport } from './routes/api/public/equipamento.$equipamentoId'
 
 const UnidadesRoute = UnidadesRouteImport.update({
   id: '/unidades',
@@ -101,6 +102,12 @@ const EquipamentosEquipamentoIdRoute =
     path: '/$equipamentoId',
     getParentRoute: () => EquipamentosRoute,
   } as any)
+const ApiPublicEquipamentoEquipamentoIdRoute =
+  ApiPublicEquipamentoEquipamentoIdRouteImport.update({
+    id: '/api/public/equipamento/$equipamentoId',
+    path: '/api/public/equipamento/$equipamentoId',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -118,6 +125,7 @@ export interface FileRoutesByFullPath {
   '/equipamentos/$equipamentoId': typeof EquipamentosEquipamentoIdRoute
   '/pmocs/$pmocId': typeof PmocsPmocIdRoute
   '/validar/$equipamentoId': typeof ValidarEquipamentoIdRoute
+  '/api/public/equipamento/$equipamentoId': typeof ApiPublicEquipamentoEquipamentoIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -135,6 +143,7 @@ export interface FileRoutesByTo {
   '/equipamentos/$equipamentoId': typeof EquipamentosEquipamentoIdRoute
   '/pmocs/$pmocId': typeof PmocsPmocIdRoute
   '/validar/$equipamentoId': typeof ValidarEquipamentoIdRoute
+  '/api/public/equipamento/$equipamentoId': typeof ApiPublicEquipamentoEquipamentoIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -153,6 +162,7 @@ export interface FileRoutesById {
   '/equipamentos/$equipamentoId': typeof EquipamentosEquipamentoIdRoute
   '/pmocs/$pmocId': typeof PmocsPmocIdRoute
   '/validar/$equipamentoId': typeof ValidarEquipamentoIdRoute
+  '/api/public/equipamento/$equipamentoId': typeof ApiPublicEquipamentoEquipamentoIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -172,6 +182,7 @@ export interface FileRouteTypes {
     | '/equipamentos/$equipamentoId'
     | '/pmocs/$pmocId'
     | '/validar/$equipamentoId'
+    | '/api/public/equipamento/$equipamentoId'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -189,6 +200,7 @@ export interface FileRouteTypes {
     | '/equipamentos/$equipamentoId'
     | '/pmocs/$pmocId'
     | '/validar/$equipamentoId'
+    | '/api/public/equipamento/$equipamentoId'
   id:
     | '__root__'
     | '/'
@@ -206,6 +218,7 @@ export interface FileRouteTypes {
     | '/equipamentos/$equipamentoId'
     | '/pmocs/$pmocId'
     | '/validar/$equipamentoId'
+    | '/api/public/equipamento/$equipamentoId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -222,6 +235,7 @@ export interface RootRouteChildren {
   ResetPasswordRoute: typeof ResetPasswordRoute
   UnidadesRoute: typeof UnidadesRoute
   ValidarEquipamentoIdRoute: typeof ValidarEquipamentoIdRoute
+  ApiPublicEquipamentoEquipamentoIdRoute: typeof ApiPublicEquipamentoEquipamentoIdRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -331,6 +345,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof EquipamentosEquipamentoIdRouteImport
       parentRoute: typeof EquipamentosRoute
     }
+    '/api/public/equipamento/$equipamentoId': {
+      id: '/api/public/equipamento/$equipamentoId'
+      path: '/api/public/equipamento/$equipamentoId'
+      fullPath: '/api/public/equipamento/$equipamentoId'
+      preLoaderRoute: typeof ApiPublicEquipamentoEquipamentoIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -370,6 +391,8 @@ const rootRouteChildren: RootRouteChildren = {
   ResetPasswordRoute: ResetPasswordRoute,
   UnidadesRoute: UnidadesRoute,
   ValidarEquipamentoIdRoute: ValidarEquipamentoIdRoute,
+  ApiPublicEquipamentoEquipamentoIdRoute:
+    ApiPublicEquipamentoEquipamentoIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

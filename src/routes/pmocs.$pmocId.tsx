@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   ArrowLeft, CheckCircle2, Wrench, FileText, Mail, Loader2, Camera,
@@ -84,6 +84,38 @@ function PmocWizard() {
     enabled: !!pmoc?.unidade_id,
   });
 
+  // Load existing PMOC data (for resuming in-progress PMOCs)
+  const { data: existing } = useQuery({
+    queryKey: ["pmoc-existing", pmocId],
+    queryFn: async () => {
+      const [{ data: eqs }, { data: resps }] = await Promise.all([
+        supabase.from("pmoc_equipamentos").select("equipamento_id").eq("pmoc_id", pmocId),
+        supabase.from("pmoc_respostas").select("equipamento_id, item_id, valor, foto_url").eq("pmoc_id", pmocId),
+      ]);
+      return { eqs: eqs ?? [], resps: resps ?? [] };
+    },
+    enabled: !!pmoc && (pmoc as any).status === "em_andamento",
+  });
+
+  const [hydrated, setHydrated] = useState(false);
+  useEffect(() => {
+    if (!existing || hydrated) return;
+    if (existing.eqs.length > 0) {
+      setSelectedEquipIds(new Set(existing.eqs.map((e: any) => e.equipamento_id)));
+    }
+    if (existing.resps.length > 0) {
+      const next: Record<string, Record<string, Resposta>> = {};
+      for (const r of existing.resps as any[]) {
+        if (!r.equipamento_id) continue;
+        next[r.equipamento_id] = next[r.equipamento_id] ?? {};
+        next[r.equipamento_id][r.item_id] = { valor: r.valor, foto_url: r.foto_url };
+      }
+      setRespostas(next);
+    }
+    if (pmoc && (pmoc as any).observacoes) setObs((pmoc as any).observacoes);
+    setHydrated(true);
+  }, [existing, hydrated, pmoc]);
+
   const selectedEquips = useMemo(
     () => (equipamentos as any[]).filter((e) => selectedEquipIds.has(e.id)),
     [equipamentos, selectedEquipIds]
@@ -105,15 +137,45 @@ function PmocWizard() {
     toast.success("Foto anexada");
   };
 
+  // Persist current progress without finalizing (auto-save / resume support)
+  const saveProgress = async (opts?: { silent?: boolean }) => {
+    try {
+      await supabase.from("pmoc_equipamentos").delete().eq("pmoc_id", pmocId);
+      await supabase.from("pmoc_respostas").delete().eq("pmoc_id", pmocId);
+      const eqRows = selectedEquips.map((e) => ({ pmoc_id: pmocId, equipamento_id: e.id }));
+      if (eqRows.length) await supabase.from("pmoc_equipamentos").insert(eqRows);
+      const respRows: any[] = [];
+      for (const equipId of selectedEquipIds) {
+        for (const item of items as any[]) {
+          const r = respostas[equipId]?.[item.id];
+          if (r?.valor == null && !r?.foto_url) continue;
+          respRows.push({
+            pmoc_id: pmocId,
+            equipamento_id: equipId,
+            item_id: item.id,
+            valor: r?.valor ?? null,
+            foto_url: r?.foto_url ?? null,
+          });
+        }
+      }
+      if (respRows.length) await supabase.from("pmoc_respostas").insert(respRows);
+      await supabase.from("pmocs").update({ observacoes: obs }).eq("id", pmocId);
+      if (!opts?.silent) toast.success("Progresso salvo");
+    } catch (e: any) {
+      if (!opts?.silent) toast.error("Falha ao salvar progresso");
+    }
+  };
+
   const finalize = async () => {
     if (!tecnicoSig || !clienteSig) { toast.error("Ambas as assinaturas são obrigatórias"); return; }
     setSubmitting(true);
     try {
-      // pmoc_equipamentos
+      // Persist equipamentos + respostas (replace any drafts)
+      await supabase.from("pmoc_equipamentos").delete().eq("pmoc_id", pmocId);
+      await supabase.from("pmoc_respostas").delete().eq("pmoc_id", pmocId);
       const eqRows = selectedEquips.map((e) => ({ pmoc_id: pmocId, equipamento_id: e.id }));
       if (eqRows.length) await supabase.from("pmoc_equipamentos").insert(eqRows);
 
-      // respostas
       const respRows: any[] = [];
       for (const equipId of selectedEquipIds) {
         for (const item of items as any[]) {
@@ -213,14 +275,31 @@ function PmocWizard() {
     }
   };
 
+  const isResuming = (pmoc as any).status === "em_andamento" && hydrated &&
+    (selectedEquipIds.size > 0 || Object.keys(respostas).length > 0);
+
   return (
     <>
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex items-center justify-between mb-4 gap-2">
         <Button variant="ghost" size="sm" onClick={() => nav({ to: "/pmocs" })}>
           <ArrowLeft className="h-4 w-4 mr-1" /> Voltar
         </Button>
-        <Badge variant="secondary">{statusLabel[(pmoc as any).status]}</Badge>
+        <div className="flex items-center gap-2">
+          {step > 0 && step < 3 && (
+            <Button variant="outline" size="sm" onClick={() => saveProgress()}>
+              Salvar rascunho
+            </Button>
+          )}
+          <Badge variant="secondary">{statusLabel[(pmoc as any).status]}</Badge>
+        </div>
       </div>
+
+      {isResuming && (
+        <Card className="p-3 mb-4 bg-primary/5 border-primary/20 text-sm flex items-center gap-2">
+          <Loader2 className="h-4 w-4 text-primary" />
+          <span>Retomando PMOC em andamento — seu progresso anterior foi carregado.</span>
+        </Card>
+      )}
 
       <div className="mb-6">
         <h1 className="text-2xl font-bold">PMOC #{(pmoc as any).numero}</h1>
@@ -374,13 +453,27 @@ function PmocWizard() {
 }
 
 function FinalizedView({ pmoc, onBack }: { pmoc: any; onBack: () => void }) {
+  const [emailOpen, setEmailOpen] = useState(false);
+  const [to, setTo] = useState(pmoc.clientes?.email ?? "");
+  const [extra, setExtra] = useState("");
+
   const sendEmail = () => {
+    if (!to) { toast.error("Informe o e-mail do destinatário"); return; }
     const cliente = pmoc.clientes?.razao_social ?? "";
     const subject = encodeURIComponent(`PMOC ${pmoc.numero ?? ""} — ${cliente}`);
     const body = encodeURIComponent(
-      `Olá,\n\nSegue o relatório PMOC concluído em ${formatDateTime(pmoc.data_finalizacao)}:\n${pmoc.pdf_url}\n\nAtenciosamente.`
+      `Olá,\n\nSegue o relatório PMOC concluído em ${formatDateTime(pmoc.data_finalizacao)}.\n\n` +
+      `Link do relatório (PDF):\n${pmoc.pdf_url}\n\n` +
+      (extra ? `${extra}\n\n` : "") +
+      `Atenciosamente.`
     );
-    window.location.href = `mailto:?subject=${subject}&body=${body}`;
+    window.location.href = `mailto:${encodeURIComponent(to)}?subject=${subject}&body=${body}`;
+  };
+
+  const copyLink = async () => {
+    if (!pmoc.pdf_url) return;
+    await navigator.clipboard.writeText(pmoc.pdf_url);
+    toast.success("Link copiado");
   };
 
   return (
@@ -406,14 +499,41 @@ function FinalizedView({ pmoc, onBack }: { pmoc: any; onBack: () => void }) {
             </Button>
           )}
           {pmoc.pdf_url && (
-            <Button variant="outline" onClick={sendEmail}>
+            <Button variant="outline" onClick={() => setEmailOpen(true)}>
               <Mail className="h-4 w-4 mr-2" /> Enviar por e-mail
+            </Button>
+          )}
+          {pmoc.pdf_url && (
+            <Button variant="outline" onClick={copyLink}>
+              Copiar link do PDF
             </Button>
           )}
           <Button variant="outline" asChild>
             <Link to="/pmocs">Ver todas as PMOCs</Link>
           </Button>
         </div>
+
+        {emailOpen && (
+          <div className="mt-6 text-left border-t pt-6 max-w-md mx-auto space-y-3">
+            <div>
+              <Label htmlFor="to">Destinatário</Label>
+              <Input id="to" type="email" value={to} onChange={(e) => setTo(e.target.value)} placeholder="cliente@empresa.com" />
+            </div>
+            <div>
+              <Label htmlFor="extra">Mensagem adicional (opcional)</Label>
+              <Textarea id="extra" rows={3} value={extra} onChange={(e) => setExtra(e.target.value)} />
+            </div>
+            <div className="flex gap-2 justify-end">
+              <Button variant="ghost" size="sm" onClick={() => setEmailOpen(false)}>Cancelar</Button>
+              <Button size="sm" onClick={sendEmail}>
+                <Mail className="h-4 w-4 mr-2" /> Abrir e-mail
+              </Button>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Abre seu cliente de e-mail padrão com tudo pré-preenchido (assunto, destinatário e link do PDF).
+            </p>
+          </div>
+        )}
       </Card>
     </>
   );
