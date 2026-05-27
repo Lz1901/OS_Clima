@@ -499,14 +499,41 @@ function FinalizedView({ pmoc, onBack }: { pmoc: any; onBack: () => void }) {
             </Button>
           )}
           {pmoc.pdf_url && (
-            <Button variant="outline" onClick={sendEmail}>
+            <Button variant="outline" onClick={() => setEmailOpen(true)}>
               <Mail className="h-4 w-4 mr-2" /> Enviar por e-mail
+            </Button>
+          )}
+          {pmoc.pdf_url && (
+            <Button variant="outline" onClick={copyLink}>
+              Copiar link do PDF
             </Button>
           )}
           <Button variant="outline" asChild>
             <Link to="/pmocs">Ver todas as PMOCs</Link>
           </Button>
         </div>
+
+        {emailOpen && (
+          <div className="mt-6 text-left border-t pt-6 max-w-md mx-auto space-y-3">
+            <div>
+              <Label htmlFor="to">Destinatário</Label>
+              <Input id="to" type="email" value={to} onChange={(e) => setTo(e.target.value)} placeholder="cliente@empresa.com" />
+            </div>
+            <div>
+              <Label htmlFor="extra">Mensagem adicional (opcional)</Label>
+              <Textarea id="extra" rows={3} value={extra} onChange={(e) => setExtra(e.target.value)} />
+            </div>
+            <div className="flex gap-2 justify-end">
+              <Button variant="ghost" size="sm" onClick={() => setEmailOpen(false)}>Cancelar</Button>
+              <Button size="sm" onClick={sendEmail}>
+                <Mail className="h-4 w-4 mr-2" /> Abrir e-mail
+              </Button>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Abre seu cliente de e-mail padrão com tudo pré-preenchido (assunto, destinatário e link do PDF).
+            </p>
+          </div>
+        )}
       </Card>
     </>
   );
