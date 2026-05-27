@@ -453,13 +453,27 @@ function PmocWizard() {
 }
 
 function FinalizedView({ pmoc, onBack }: { pmoc: any; onBack: () => void }) {
+  const [emailOpen, setEmailOpen] = useState(false);
+  const [to, setTo] = useState(pmoc.clientes?.email ?? "");
+  const [extra, setExtra] = useState("");
+
   const sendEmail = () => {
+    if (!to) { toast.error("Informe o e-mail do destinatário"); return; }
     const cliente = pmoc.clientes?.razao_social ?? "";
     const subject = encodeURIComponent(`PMOC ${pmoc.numero ?? ""} — ${cliente}`);
     const body = encodeURIComponent(
-      `Olá,\n\nSegue o relatório PMOC concluído em ${formatDateTime(pmoc.data_finalizacao)}:\n${pmoc.pdf_url}\n\nAtenciosamente.`
+      `Olá,\n\nSegue o relatório PMOC concluído em ${formatDateTime(pmoc.data_finalizacao)}.\n\n` +
+      `Link do relatório (PDF):\n${pmoc.pdf_url}\n\n` +
+      (extra ? `${extra}\n\n` : "") +
+      `Atenciosamente.`
     );
-    window.location.href = `mailto:?subject=${subject}&body=${body}`;
+    window.location.href = `mailto:${encodeURIComponent(to)}?subject=${subject}&body=${body}`;
+  };
+
+  const copyLink = async () => {
+    if (!pmoc.pdf_url) return;
+    await navigator.clipboard.writeText(pmoc.pdf_url);
+    toast.success("Link copiado");
   };
 
   return (
