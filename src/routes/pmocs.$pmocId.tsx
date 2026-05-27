@@ -275,14 +275,31 @@ function PmocWizard() {
     }
   };
 
+  const isResuming = (pmoc as any).status === "em_andamento" && hydrated &&
+    (selectedEquipIds.size > 0 || Object.keys(respostas).length > 0);
+
   return (
     <>
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex items-center justify-between mb-4 gap-2">
         <Button variant="ghost" size="sm" onClick={() => nav({ to: "/pmocs" })}>
           <ArrowLeft className="h-4 w-4 mr-1" /> Voltar
         </Button>
-        <Badge variant="secondary">{statusLabel[(pmoc as any).status]}</Badge>
+        <div className="flex items-center gap-2">
+          {step > 0 && step < 3 && (
+            <Button variant="outline" size="sm" onClick={() => saveProgress()}>
+              Salvar rascunho
+            </Button>
+          )}
+          <Badge variant="secondary">{statusLabel[(pmoc as any).status]}</Badge>
+        </div>
       </div>
+
+      {isResuming && (
+        <Card className="p-3 mb-4 bg-primary/5 border-primary/20 text-sm flex items-center gap-2">
+          <Loader2 className="h-4 w-4 text-primary" />
+          <span>Retomando PMOC em andamento — seu progresso anterior foi carregado.</span>
+        </Card>
+      )}
 
       <div className="mb-6">
         <h1 className="text-2xl font-bold">PMOC #{(pmoc as any).numero}</h1>
