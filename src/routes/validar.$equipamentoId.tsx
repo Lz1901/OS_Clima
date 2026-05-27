@@ -1,10 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Snowflake, ShieldCheck, Wrench } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
+import { Snowflake, ShieldCheck, Wrench, FileText, Clock } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { equipamentoTipoLabel, formatDate, statusLabel } from "@/lib/format";
 
 export const Route = createFileRoute("/validar/$equipamentoId")({
@@ -13,56 +12,51 @@ export const Route = createFileRoute("/validar/$equipamentoId")({
 
 function ValidarPage() {
   const { equipamentoId } = Route.useParams();
-  const [notFound, setNotFound] = useState(false);
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, error } = useQuery({
     queryKey: ["validar", equipamentoId],
     queryFn: async () => {
-      const { data: eq } = await supabase
-        .from("equipamentos")
-        .select("marca, modelo, tipo, numero_serie, localizacao, status, data_instalacao, company_id, unidade_id")
-        .eq("id", equipamentoId)
-        .maybeSingle();
-      if (!eq) return null;
-      const [{ data: company }, { data: unidade }, { data: ultima }] = await Promise.all([
-        supabase.from("companies").select("nome, cor_primaria, logo_url").eq("id", eq.company_id).maybeSingle(),
-        supabase.from("unidades").select("nome, clientes(razao_social)").eq("id", eq.unidade_id).maybeSingle(),
-        supabase.from("pmoc_equipamentos")
-          .select("pmocs(numero, data_finalizacao, status)")
-          .eq("equipamento_id", equipamentoId)
-          .order("created_at", { ascending: false })
-          .limit(1),
-      ]);
-      return { eq, company, unidade, ultima: ultima?.[0]?.pmocs };
+      const res = await fetch(`/api/public/equipamento/${equipamentoId}`);
+      if (!res.ok) throw new Error(String(res.status));
+      return res.json();
     },
+    retry: false,
   });
 
-  useEffect(() => { if (!isLoading && !data) setNotFound(true); }, [isLoading, data]);
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-muted">
+        <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+      </div>
+    );
+  }
 
-  if (isLoading) return (
-    <div className="min-h-screen flex items-center justify-center bg-muted">
-      <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-    </div>
-  );
+  if (error || !data?.eq) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-muted p-4">
+        <Card className="p-8 text-center max-w-md">
+          <h1 className="text-xl font-bold mb-2">Equipamento não encontrado</h1>
+          <p className="text-sm text-muted-foreground">
+            O QR Code lido pode ser inválido ou ter expirado.
+          </p>
+        </Card>
+      </div>
+    );
+  }
 
-  if (notFound) return (
-    <div className="min-h-screen flex items-center justify-center bg-muted p-4">
-      <Card className="p-8 text-center max-w-md">
-        <h1 className="text-xl font-bold mb-2">Equipamento não encontrado</h1>
-        <p className="text-sm text-muted-foreground">O QR Code lido pode ser inválido ou ter expirado.</p>
-      </Card>
-    </div>
-  );
-
-  const { eq, company, unidade, ultima }: any = data!;
+  const { eq, company, unidade, historico } = data as any;
+  const ultima = historico?.[0];
+  const finalizadas = (historico ?? []).filter((h: any) => h.status === "finalizado");
 
   return (
     <div className="min-h-screen bg-muted py-8 px-4">
       <div className="max-w-lg mx-auto space-y-4">
         <div className="flex items-center justify-center gap-2 mb-2 text-center">
-          {company?.logo_url
-            ? <img src={company.logo_url} alt="" className="h-10" />
-            : <Snowflake className="h-8 w-8 text-primary" />}
+          {company?.logo_url ? (
+            <img src={company.logo_url} alt="" className="h-10" />
+          ) : (
+            <Snowflake className="h-8 w-8 text-primary" />
+          )}
           <h1 className="text-xl font-bold">{company?.nome ?? "PMOC Pro"}</h1>
         </div>
 
@@ -77,9 +71,13 @@ function ValidarPage() {
               <Wrench className="h-6 w-6" />
             </div>
             <div className="flex-1">
-              <h2 className="font-bold">{eq.marca} {eq.modelo}</h2>
+              <h2 className="font-bold">
+                {eq.marca} {eq.modelo}
+              </h2>
               <p className="text-sm text-muted-foreground">{equipamentoTipoLabel[eq.tipo]}</p>
-              {eq.numero_serie && <p className="text-xs text-muted-foreground">S/N: {eq.numero_serie}</p>}
+              {eq.numero_serie && (
+                <p className="text-xs text-muted-foreground">S/N: {eq.numero_serie}</p>
+              )}
             </div>
             <Badge>{statusLabel[eq.status]}</Badge>
           </div>
@@ -87,17 +85,32 @@ function ValidarPage() {
           <div className="space-y-2 text-sm">
             <Row label="Cliente" value={unidade?.clientes?.razao_social} />
             <Row label="Unidade" value={unidade?.nome} />
+            <Row label="Endereço" value={unidade?.endereco} />
             <Row label="Localização" value={eq.localizacao} />
+            <Row label="Capacidade" value={eq.btus ? `${eq.btus.toLocaleString("pt-BR")} BTUs` : null} />
+            <Row label="Gás" value={eq.gas_refrigerante} />
             <Row label="Instalado em" value={formatDate(eq.data_instalacao)} />
           </div>
 
           {ultima ? (
             <div className="mt-4 pt-4 border-t">
-              <p className="text-xs text-muted-foreground mb-1">Última manutenção registrada</p>
-              <p className="font-semibold">PMOC #{ultima.numero}</p>
-              <p className="text-xs text-muted-foreground">
-                {formatDate(ultima.data_finalizacao)} · {statusLabel[ultima.status]}
-              </p>
+              <p className="text-xs text-muted-foreground mb-1">Última manutenção</p>
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="font-semibold">PMOC #{ultima.numero}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {formatDate(ultima.data_finalizacao ?? ultima.data_inicio)} ·{" "}
+                    {statusLabel[ultima.status]}
+                  </p>
+                </div>
+                {ultima.pdf_url && (
+                  <Button size="sm" variant="outline" asChild>
+                    <a href={ultima.pdf_url} target="_blank" rel="noreferrer">
+                      <FileText className="h-3 w-3 mr-1" /> PDF
+                    </a>
+                  </Button>
+                )}
+              </div>
             </div>
           ) : (
             <div className="mt-4 pt-4 border-t text-xs text-muted-foreground">
@@ -105,6 +118,50 @@ function ValidarPage() {
             </div>
           )}
         </Card>
+
+        {finalizadas.length > 1 && (
+          <Card className="p-6">
+            <div className="flex items-center gap-2 mb-3">
+              <Clock className="h-4 w-4 text-primary" />
+              <h3 className="font-semibold text-sm">Histórico de manutenções</h3>
+              <Badge variant="secondary" className="ml-auto">
+                {finalizadas.length}
+              </Badge>
+            </div>
+            <ol className="relative border-l border-border ml-2 space-y-3">
+              {finalizadas.map((h: any) => (
+                <li key={h.id} className="ml-4">
+                  <span className="absolute -left-[5px] mt-1.5 h-2 w-2 rounded-full bg-primary" />
+                  <div className="flex items-center justify-between gap-2">
+                    <div>
+                      <p className="text-sm font-medium">PMOC #{h.numero}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {formatDate(h.data_finalizacao ?? h.data_inicio)}
+                      </p>
+                    </div>
+                    {h.pdf_url && (
+                      <Button size="sm" variant="ghost" asChild>
+                        <a href={h.pdf_url} target="_blank" rel="noreferrer">
+                          <FileText className="h-3 w-3" />
+                        </a>
+                      </Button>
+                    )}
+                  </div>
+                </li>
+              ))}
+            </ol>
+          </Card>
+        )}
+
+        {(company?.telefone || company?.email) && (
+          <Card className="p-4 text-center text-xs text-muted-foreground space-y-1">
+            <p className="font-medium text-foreground">Contato da empresa responsável</p>
+            {company.responsavel_tecnico && <p>Resp. Téc.: {company.responsavel_tecnico}</p>}
+            {company.crea && <p>CREA: {company.crea}</p>}
+            {company.telefone && <p>{company.telefone}</p>}
+            {company.email && <p>{company.email}</p>}
+          </Card>
+        )}
 
         <p className="text-xs text-center text-muted-foreground">
           Página pública de validação · Powered by PMOC Pro
@@ -115,10 +172,11 @@ function ValidarPage() {
 }
 
 function Row({ label, value }: { label: string; value?: string | null }) {
+  if (!value) return null;
   return (
     <div className="flex justify-between gap-3">
       <span className="text-muted-foreground">{label}</span>
-      <span className="font-medium text-right">{value || "—"}</span>
+      <span className="font-medium text-right">{value}</span>
     </div>
   );
 }
