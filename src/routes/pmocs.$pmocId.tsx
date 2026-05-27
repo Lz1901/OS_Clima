@@ -137,15 +137,45 @@ function PmocWizard() {
     toast.success("Foto anexada");
   };
 
+  // Persist current progress without finalizing (auto-save / resume support)
+  const saveProgress = async (opts?: { silent?: boolean }) => {
+    try {
+      await supabase.from("pmoc_equipamentos").delete().eq("pmoc_id", pmocId);
+      await supabase.from("pmoc_respostas").delete().eq("pmoc_id", pmocId);
+      const eqRows = selectedEquips.map((e) => ({ pmoc_id: pmocId, equipamento_id: e.id }));
+      if (eqRows.length) await supabase.from("pmoc_equipamentos").insert(eqRows);
+      const respRows: any[] = [];
+      for (const equipId of selectedEquipIds) {
+        for (const item of items as any[]) {
+          const r = respostas[equipId]?.[item.id];
+          if (r?.valor == null && !r?.foto_url) continue;
+          respRows.push({
+            pmoc_id: pmocId,
+            equipamento_id: equipId,
+            item_id: item.id,
+            valor: r?.valor ?? null,
+            foto_url: r?.foto_url ?? null,
+          });
+        }
+      }
+      if (respRows.length) await supabase.from("pmoc_respostas").insert(respRows);
+      await supabase.from("pmocs").update({ observacoes: obs }).eq("id", pmocId);
+      if (!opts?.silent) toast.success("Progresso salvo");
+    } catch (e: any) {
+      if (!opts?.silent) toast.error("Falha ao salvar progresso");
+    }
+  };
+
   const finalize = async () => {
     if (!tecnicoSig || !clienteSig) { toast.error("Ambas as assinaturas são obrigatórias"); return; }
     setSubmitting(true);
     try {
-      // pmoc_equipamentos
+      // Persist equipamentos + respostas (replace any drafts)
+      await supabase.from("pmoc_equipamentos").delete().eq("pmoc_id", pmocId);
+      await supabase.from("pmoc_respostas").delete().eq("pmoc_id", pmocId);
       const eqRows = selectedEquips.map((e) => ({ pmoc_id: pmocId, equipamento_id: e.id }));
       if (eqRows.length) await supabase.from("pmoc_equipamentos").insert(eqRows);
 
-      // respostas
       const respRows: any[] = [];
       for (const equipId of selectedEquipIds) {
         for (const item of items as any[]) {
