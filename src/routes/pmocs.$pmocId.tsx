@@ -84,6 +84,38 @@ function PmocWizard() {
     enabled: !!pmoc?.unidade_id,
   });
 
+  // Load existing PMOC data (for resuming in-progress PMOCs)
+  const { data: existing } = useQuery({
+    queryKey: ["pmoc-existing", pmocId],
+    queryFn: async () => {
+      const [{ data: eqs }, { data: resps }] = await Promise.all([
+        supabase.from("pmoc_equipamentos").select("equipamento_id").eq("pmoc_id", pmocId),
+        supabase.from("pmoc_respostas").select("equipamento_id, item_id, valor, foto_url").eq("pmoc_id", pmocId),
+      ]);
+      return { eqs: eqs ?? [], resps: resps ?? [] };
+    },
+    enabled: !!pmoc && (pmoc as any).status === "em_andamento",
+  });
+
+  const [hydrated, setHydrated] = useState(false);
+  useEffect(() => {
+    if (!existing || hydrated) return;
+    if (existing.eqs.length > 0) {
+      setSelectedEquipIds(new Set(existing.eqs.map((e: any) => e.equipamento_id)));
+    }
+    if (existing.resps.length > 0) {
+      const next: Record<string, Record<string, Resposta>> = {};
+      for (const r of existing.resps as any[]) {
+        if (!r.equipamento_id) continue;
+        next[r.equipamento_id] = next[r.equipamento_id] ?? {};
+        next[r.equipamento_id][r.item_id] = { valor: r.valor, foto_url: r.foto_url };
+      }
+      setRespostas(next);
+    }
+    if (pmoc && (pmoc as any).observacoes) setObs((pmoc as any).observacoes);
+    setHydrated(true);
+  }, [existing, hydrated, pmoc]);
+
   const selectedEquips = useMemo(
     () => (equipamentos as any[]).filter((e) => selectedEquipIds.has(e.id)),
     [equipamentos, selectedEquipIds]
