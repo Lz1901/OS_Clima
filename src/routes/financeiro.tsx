@@ -48,7 +48,9 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Badge } from "@/components/ui/badge";
 import { createFileRoute } from "@tanstack/react-router";
+
 
 export const Route = createFileRoute("/financeiro")({
   component: FinanceiroPage,

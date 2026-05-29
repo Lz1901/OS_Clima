@@ -14,12 +14,14 @@ import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as PmocsRouteImport } from './routes/pmocs'
 import { Route as NotificacoesRouteImport } from './routes/notificacoes'
 import { Route as LogsRouteImport } from './routes/logs'
+import { Route as FinanceiroRouteImport } from './routes/financeiro'
 import { Route as EquipamentosRouteImport } from './routes/equipamentos'
 import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as ConfiguracoesRouteImport } from './routes/configuracoes'
 import { Route as ClientesRouteImport } from './routes/clientes'
 import { Route as ChecklistsRouteImport } from './routes/checklists'
 import { Route as AuthRouteImport } from './routes/auth'
+import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ValidarEquipamentoIdRouteImport } from './routes/validar.$equipamentoId'
 import { Route as PmocsPmocIdRouteImport } from './routes/pmocs.$pmocId'
@@ -49,6 +51,11 @@ const NotificacoesRoute = NotificacoesRouteImport.update({
 const LogsRoute = LogsRouteImport.update({
   id: '/logs',
   path: '/logs',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const FinanceiroRoute = FinanceiroRouteImport.update({
+  id: '/financeiro',
+  path: '/financeiro',
   getParentRoute: () => rootRouteImport,
 } as any)
 const EquipamentosRoute = EquipamentosRouteImport.update({
@@ -81,6 +88,11 @@ const AuthRoute = AuthRouteImport.update({
   path: '/auth',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminRoute = AdminRouteImport.update({
+  id: '/admin',
+  path: '/admin',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
@@ -111,12 +123,14 @@ const ApiPublicEquipamentoEquipamentoIdRoute =
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/admin': typeof AdminRoute
   '/auth': typeof AuthRoute
   '/checklists': typeof ChecklistsRoute
   '/clientes': typeof ClientesRoute
   '/configuracoes': typeof ConfiguracoesRoute
   '/dashboard': typeof DashboardRoute
   '/equipamentos': typeof EquipamentosRouteWithChildren
+  '/financeiro': typeof FinanceiroRoute
   '/logs': typeof LogsRoute
   '/notificacoes': typeof NotificacoesRoute
   '/pmocs': typeof PmocsRouteWithChildren
@@ -129,12 +143,14 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/admin': typeof AdminRoute
   '/auth': typeof AuthRoute
   '/checklists': typeof ChecklistsRoute
   '/clientes': typeof ClientesRoute
   '/configuracoes': typeof ConfiguracoesRoute
   '/dashboard': typeof DashboardRoute
   '/equipamentos': typeof EquipamentosRouteWithChildren
+  '/financeiro': typeof FinanceiroRoute
   '/logs': typeof LogsRoute
   '/notificacoes': typeof NotificacoesRoute
   '/pmocs': typeof PmocsRouteWithChildren
@@ -148,12 +164,14 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/admin': typeof AdminRoute
   '/auth': typeof AuthRoute
   '/checklists': typeof ChecklistsRoute
   '/clientes': typeof ClientesRoute
   '/configuracoes': typeof ConfiguracoesRoute
   '/dashboard': typeof DashboardRoute
   '/equipamentos': typeof EquipamentosRouteWithChildren
+  '/financeiro': typeof FinanceiroRoute
   '/logs': typeof LogsRoute
   '/notificacoes': typeof NotificacoesRoute
   '/pmocs': typeof PmocsRouteWithChildren
@@ -168,12 +186,14 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/admin'
     | '/auth'
     | '/checklists'
     | '/clientes'
     | '/configuracoes'
     | '/dashboard'
     | '/equipamentos'
+    | '/financeiro'
     | '/logs'
     | '/notificacoes'
     | '/pmocs'
@@ -186,12 +206,14 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/admin'
     | '/auth'
     | '/checklists'
     | '/clientes'
     | '/configuracoes'
     | '/dashboard'
     | '/equipamentos'
+    | '/financeiro'
     | '/logs'
     | '/notificacoes'
     | '/pmocs'
@@ -204,12 +226,14 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
+    | '/admin'
     | '/auth'
     | '/checklists'
     | '/clientes'
     | '/configuracoes'
     | '/dashboard'
     | '/equipamentos'
+    | '/financeiro'
     | '/logs'
     | '/notificacoes'
     | '/pmocs'
@@ -223,12 +247,14 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AdminRoute: typeof AdminRoute
   AuthRoute: typeof AuthRoute
   ChecklistsRoute: typeof ChecklistsRoute
   ClientesRoute: typeof ClientesRoute
   ConfiguracoesRoute: typeof ConfiguracoesRoute
   DashboardRoute: typeof DashboardRoute
   EquipamentosRoute: typeof EquipamentosRouteWithChildren
+  FinanceiroRoute: typeof FinanceiroRoute
   LogsRoute: typeof LogsRoute
   NotificacoesRoute: typeof NotificacoesRoute
   PmocsRoute: typeof PmocsRouteWithChildren
@@ -275,6 +301,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LogsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/financeiro': {
+      id: '/financeiro'
+      path: '/financeiro'
+      fullPath: '/financeiro'
+      preLoaderRoute: typeof FinanceiroRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/equipamentos': {
       id: '/equipamentos'
       path: '/equipamentos'
@@ -315,6 +348,13 @@ declare module '@tanstack/react-router' {
       path: '/auth'
       fullPath: '/auth'
       preLoaderRoute: typeof AuthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin': {
+      id: '/admin'
+      path: '/admin'
+      fullPath: '/admin'
+      preLoaderRoute: typeof AdminRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/': {
@@ -379,12 +419,14 @@ const PmocsRouteWithChildren = PmocsRoute._addFileChildren(PmocsRouteChildren)
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AdminRoute: AdminRoute,
   AuthRoute: AuthRoute,
   ChecklistsRoute: ChecklistsRoute,
   ClientesRoute: ClientesRoute,
   ConfiguracoesRoute: ConfiguracoesRoute,
   DashboardRoute: DashboardRoute,
   EquipamentosRoute: EquipamentosRouteWithChildren,
+  FinanceiroRoute: FinanceiroRoute,
   LogsRoute: LogsRoute,
   NotificacoesRoute: NotificacoesRoute,
   PmocsRoute: PmocsRouteWithChildren,
