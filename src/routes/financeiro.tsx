@@ -48,9 +48,13 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Badge } from "@/components/ui/badge";
+import { createFileRoute } from "@tanstack/react-router";
 
-export default function FinanceiroPage() {
+export const Route = createFileRoute("/financeiro")({
+  component: FinanceiroPage,
+});
+
+function FinanceiroPage() {
   const { profile } = useAuth();
   const [loading, setLoading] = useState(true);
   const [transactions, setTransactions] = useState<any[]>([]);

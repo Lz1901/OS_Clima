@@ -16,9 +16,13 @@ import { toast } from "sonner";
 import { Building2, Users, ClipboardCheck, DollarSign, Search, ShieldAlert } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { formatCurrency, formatDate } from "@/lib/format";
-import { Badge } from "@/components/ui/badge";
+import { createFileRoute } from "@tanstack/react-router";
 
-export default function SuperAdminPage() {
+export const Route = createFileRoute("/admin")({
+  component: SuperAdminPage,
+});
+
+function SuperAdminPage() {
   const { profile } = useAuth();
   const [loading, setLoading] = useState(true);
   const [companies, setCompanies] = useState<any[]>([]);
