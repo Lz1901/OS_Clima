@@ -79,26 +79,29 @@ function DashboardPage() {
   const { data: stats } = useQuery({
     queryKey: ["dashboard-stats"],
     queryFn: async () => {
-      const queries = [
+      const [pmocsRes, clientesRes, equipamentosRes] = await Promise.all([
         supabase.from("pmocs").select("id,status,created_at,data_finalizacao"),
         supabase.from("clientes").select("id", { count: "exact", head: true }),
         supabase.from("equipamentos").select("id", { count: "exact", head: true }),
-      ];
+      ]);
 
-      if (hasPermission('financeiro.view')) {
-        queries.push(supabase.from("financial_transactions").select("valor, tipo").eq("status", "pago"));
-      }
-
-      const results = await Promise.all(queries as any[]);
-      const pmocs = results[0].data ?? [];
-      const clientesCount = results[1].count ?? 0;
-      const equipamentosCount = results[2].count ?? 0;
+      const pmocs = pmocsRes.data ?? [];
+      const clientesCount = clientesRes.count ?? 0;
+      const equipamentosCount = equipamentosRes.count ?? 0;
       
       let receita = 0;
       let despesa = 0;
-      if (results[3]?.data) {
-        receita = results[3].data.filter((t: any) => t.tipo === 'receita').reduce((acc: number, t: any) => acc + Number(t.valor), 0);
-        despesa = results[3].data.filter((t: any) => t.tipo === 'despesa').reduce((acc: number, t: any) => acc + Number(t.valor), 0);
+      
+      if (hasPermission('financeiro.view')) {
+        const { data: transData } = await supabase
+          .from("financial_transactions")
+          .select("valor, tipo")
+          .eq("status", "pago");
+          
+        if (transData) {
+          receita = transData.filter((t: any) => t.tipo === 'receita').reduce((acc: number, t: any) => acc + Number(t.valor), 0);
+          despesa = transData.filter((t: any) => t.tipo === 'despesa').reduce((acc: number, t: any) => acc + Number(t.valor), 0);
+        }
       }
 
       return {
