@@ -79,7 +79,7 @@ function DashboardPage() {
   const { data: stats } = useQuery({
     queryKey: ["dashboard-stats"],
     queryFn: async () => {
-      const queries: Promise<any>[] = [
+      const queries = [
         supabase.from("pmocs").select("id,status,created_at,data_finalizacao"),
         supabase.from("clientes").select("id", { count: "exact", head: true }),
         supabase.from("equipamentos").select("id", { count: "exact", head: true }),
@@ -89,7 +89,7 @@ function DashboardPage() {
         queries.push(supabase.from("financial_transactions").select("valor, tipo").eq("status", "pago"));
       }
 
-      const results = await Promise.all(queries);
+      const results = await Promise.all(queries as any[]);
       const pmocs = results[0].data ?? [];
       const clientesCount = results[1].count ?? 0;
       const equipamentosCount = results[2].count ?? 0;
