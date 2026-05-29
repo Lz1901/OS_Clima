@@ -41,7 +41,7 @@ import {
   Clock,
   AlertCircle
 } from "lucide-react";
-import { formatCurrency, formatDate } from "@/lib/utils";
+import { formatCurrency, formatDate } from "@/lib/format";
 import {
   DropdownMenu,
   DropdownMenuContent,
