@@ -726,6 +726,9 @@ export type Database = {
           numero: string | null
           observacoes: string | null
           pdf_url: string | null
+          periodicidade: string | null
+          pmoc_origem_id: string | null
+          proxima_execucao: string | null
           status: Database["public"]["Enums"]["pmoc_status"]
           tecnico_id: string | null
           template_id: string | null
@@ -743,6 +746,9 @@ export type Database = {
           numero?: string | null
           observacoes?: string | null
           pdf_url?: string | null
+          periodicidade?: string | null
+          pmoc_origem_id?: string | null
+          proxima_execucao?: string | null
           status?: Database["public"]["Enums"]["pmoc_status"]
           tecnico_id?: string | null
           template_id?: string | null
@@ -760,6 +766,9 @@ export type Database = {
           numero?: string | null
           observacoes?: string | null
           pdf_url?: string | null
+          periodicidade?: string | null
+          pmoc_origem_id?: string | null
+          proxima_execucao?: string | null
           status?: Database["public"]["Enums"]["pmoc_status"]
           tecnico_id?: string | null
           template_id?: string | null
@@ -958,6 +967,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      calc_proxima_execucao: {
+        Args: { _base: string; _periodicidade: string }
+        Returns: string
+      }
       check_user_permission: {
         Args: { _permission_id: string; _user_id: string }
         Returns: boolean

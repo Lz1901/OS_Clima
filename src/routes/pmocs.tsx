@@ -119,6 +119,8 @@ function PmocsPage() {
                     </p>
                     <p className="text-xs text-muted-foreground">
                       Agendado: {formatDate(p.data_agendada)} · Finalizado: {formatDate(p.data_finalizacao)}
+                      {p.periodicidade ? ` · ${p.periodicidade}` : ""}
+                      {p.proxima_execucao ? ` · Próxima: ${formatDate(p.proxima_execucao)}` : ""}
                     </p>
                   </div>
                 </button>
@@ -183,6 +185,8 @@ function NewPmocDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (v
   const create = useMutation({
     mutationFn: async () => {
       const numero = `${new Date().getFullYear()}-${Math.floor(Math.random() * 9000 + 1000)}`;
+      const proxima = form.data_agendada && form.periodicidade
+        ? calcNext(form.data_agendada, form.periodicidade) : null;
       const { data, error } = await supabase.from("pmocs").insert({
         company_id: profile!.company_id,
         cliente_id: form.cliente_id,
@@ -190,9 +194,12 @@ function NewPmocDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (v
         template_id: form.template_id,
         tecnico_id: profile!.id,
         data_agendada: form.data_agendada || null,
+        periodicidade: form.periodicidade || null,
+        proxima_execucao: proxima,
+        observacoes: form.observacoes || null,
         numero,
         status: "pendente",
-      }).select().single();
+      } as any).select().single();
       if (error) throw error;
       await logActivity(profile!.company_id, "criou", "pmoc", data.id, { numero });
       return data;
@@ -206,9 +213,21 @@ function NewPmocDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (v
     onError: (e: any) => toast.error(e.message),
   });
 
+  const periodicidadeOptions = [
+    { v: "mensal", l: "Mensal" },
+    { v: "quinzenal", l: "Quinzenal" },
+    { v: "bimestral", l: "Bimestral" },
+    { v: "trimestral", l: "Trimestral" },
+    { v: "semestral", l: "Semestral" },
+    { v: "anual", l: "Anual" },
+  ];
+
+  const proximaPreview = form.data_agendada && form.periodicidade
+    ? calcNext(form.data_agendada, form.periodicidade) : null;
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
+      <DialogContent className="max-h-[90vh] overflow-y-auto">
         <DialogHeader><DialogTitle>Nova PMOC</DialogTitle></DialogHeader>
         <div className="grid gap-4 py-4">
           <div className="space-y-2">
@@ -242,18 +261,59 @@ function NewPmocDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (v
               </SelectContent>
             </Select>
           </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-2">
+              <Label>Data inicial *</Label>
+              <Input type="date" value={form.data_agendada ?? ""} onChange={(e) => setForm({ ...form, data_agendada: e.target.value })} />
+            </div>
+            <div className="space-y-2">
+              <Label>Periodicidade *</Label>
+              <Select value={form.periodicidade ?? ""} onValueChange={(v) => setForm({ ...form, periodicidade: v })}>
+                <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+                <SelectContent>
+                  {periodicidadeOptions.map((p) => <SelectItem key={p.v} value={p.v}>{p.l}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          {proximaPreview && (
+            <div className="text-xs text-muted-foreground bg-primary/5 border border-primary/20 rounded-md p-2">
+              Próxima execução será agendada automaticamente para <strong>{formatDate(proximaPreview)}</strong> ao finalizar esta PMOC.
+            </div>
+          )}
           <div className="space-y-2">
-            <Label>Data agendada</Label>
-            <Input type="date" value={form.data_agendada ?? ""} onChange={(e) => setForm({ ...form, data_agendada: e.target.value })} />
+            <Label>Observações</Label>
+            <textarea
+              className="w-full min-h-[60px] rounded-md border border-input bg-background px-3 py-2 text-sm"
+              value={form.observacoes ?? ""}
+              onChange={(e) => setForm({ ...form, observacoes: e.target.value })}
+              placeholder="Notas internas, escopo do serviço…"
+            />
           </div>
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
-          <Button onClick={() => create.mutate()} disabled={!form.cliente_id || !form.unidade_id || !form.template_id || create.isPending}>
+          <Button
+            onClick={() => create.mutate()}
+            disabled={!form.cliente_id || !form.unidade_id || !form.template_id || !form.data_agendada || !form.periodicidade || create.isPending}
+          >
             {create.isPending ? "Criando..." : "Criar e iniciar"}
           </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
   );
+}
+
+export function calcNext(baseISO: string, period: string): string {
+  const d = new Date(baseISO + "T00:00:00");
+  switch (period) {
+    case "mensal":     d.setMonth(d.getMonth() + 1); break;
+    case "quinzenal":  d.setDate(d.getDate() + 15); break;
+    case "bimestral":  d.setMonth(d.getMonth() + 2); break;
+    case "trimestral": d.setMonth(d.getMonth() + 3); break;
+    case "semestral":  d.setMonth(d.getMonth() + 6); break;
+    case "anual":      d.setFullYear(d.getFullYear() + 1); break;
+  }
+  return d.toISOString().slice(0, 10);
 }

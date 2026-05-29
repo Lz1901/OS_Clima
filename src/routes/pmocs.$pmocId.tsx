@@ -20,6 +20,7 @@ import { SignaturePad, type SignatureResult } from "@/components/signature-pad";
 import { formatDateTime, statusLabel, equipamentoTipoLabel } from "@/lib/format";
 import { logActivity } from "@/lib/logs";
 import { generatePmocPdf, uploadPmocPdf } from "@/lib/pdf";
+import { calcNext as calcNextDate } from "./pmocs";
 
 export const Route = createFileRoute("/pmocs/$pmocId")({
   component: () => (
@@ -245,6 +246,38 @@ function PmocWizard() {
           await supabase.from("equipamentos").update({ status: "manutencao" }).eq("id", eqId);
         } else {
           await supabase.from("equipamentos").update({ status: "ativo" }).eq("id", eqId);
+        }
+      }
+
+      // RECORRÊNCIA: cria automaticamente a próxima PMOC se houver periodicidade
+      const periodicidade = (pmoc as any).periodicidade as string | null;
+      if (periodicidade) {
+        const baseISO = new Date().toISOString().slice(0, 10);
+        const proxima = calcNextDate(baseISO, periodicidade);
+        const proximaDepois = calcNextDate(proxima, periodicidade);
+        const ano = new Date().getFullYear();
+        const novoNumero = `${ano}-${Math.floor(Math.random() * 9000 + 1000)}`;
+        const { data: novo } = await supabase.from("pmocs").insert({
+          company_id: profile!.company_id,
+          cliente_id: (pmoc as any).cliente_id,
+          unidade_id: (pmoc as any).unidade_id,
+          template_id: (pmoc as any).template_id,
+          tecnico_id: (pmoc as any).tecnico_id,
+          data_agendada: proxima,
+          periodicidade,
+          proxima_execucao: proximaDepois,
+          pmoc_origem_id: pmocId,
+          numero: novoNumero,
+          status: "pendente",
+        } as any).select().single();
+        if (novo) {
+          await supabase.from("notificacoes").insert({
+            company_id: profile!.company_id,
+            tipo: "pmoc_agendada",
+            titulo: `Próxima PMOC agendada`,
+            mensagem: `PMOC #${novoNumero} agendada para ${proxima}`,
+            link: `/pmocs/${novo.id}`,
+          });
         }
       }
 
