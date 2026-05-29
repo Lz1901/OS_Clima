@@ -11,6 +11,8 @@ import {
   LogOut,
   Snowflake,
   Activity,
+  DollarSign,
+  ShieldCheck,
 } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { cn } from "@/lib/utils";
@@ -18,18 +20,20 @@ import { Button } from "@/components/ui/button";
 
 const nav = [
   { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { to: "/pmocs", label: "PMOCs", icon: ClipboardCheck },
-  { to: "/clientes", label: "Clientes", icon: Users },
-  { to: "/unidades", label: "Unidades", icon: Building2 },
-  { to: "/equipamentos", label: "Equipamentos", icon: Wrench },
-  { to: "/checklists", label: "Checklists", icon: ListChecks },
-  { to: "/logs", label: "Atividade", icon: Activity },
+  { to: "/pmocs", label: "PMOCs", icon: ClipboardCheck, permission: "pmoc.view" },
+  { to: "/clientes", label: "Clientes", icon: Users, permission: "clientes.view" },
+  { to: "/unidades", label: "Unidades", icon: Building2, permission: "clientes.view" },
+  { to: "/equipamentos", label: "Equipamentos", icon: Wrench, permission: "equipamentos.manage" },
+  { to: "/financeiro", label: "Financeiro", icon: DollarSign, permission: "financeiro.view" },
+  { to: "/checklists", label: "Checklists", icon: ListChecks, permission: "configuracoes.manage" },
+  { to: "/logs", label: "Atividade", icon: Activity, permission: "configuracoes.manage" },
   { to: "/notificacoes", label: "Notificações", icon: Bell },
-  { to: "/configuracoes", label: "Configurações", icon: Settings },
+  { to: "/configuracoes", label: "Configurações", icon: Settings, permission: "configuracoes.manage" },
+  { to: "/admin", label: "Painel Super Admin", icon: ShieldCheck, superAdminOnly: true },
 ];
 
 export function AppSidebar({ onNavigate }: { onNavigate?: () => void }) {
-  const { profile, signOut } = useAuth();
+  const { profile, signOut, hasPermission } = useAuth();
   const { location } = useRouterState();
 
   return (
@@ -46,6 +50,9 @@ export function AppSidebar({ onNavigate }: { onNavigate?: () => void }) {
 
       <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-1">
         {nav.map((item) => {
+          if (item.superAdminOnly && !profile?.is_super_admin) return null;
+          if (item.permission && !hasPermission(item.permission)) return null;
+
           const active = location.pathname.startsWith(item.to);
           return (
             <Link
