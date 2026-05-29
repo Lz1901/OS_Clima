@@ -8,6 +8,7 @@ import {
   TrendingUp,
   CheckCircle2,
   Clock,
+  DollarSign,
 } from "lucide-react";
 import {
   ResponsiveContainer,
@@ -23,7 +24,7 @@ import { AppLayout, PageHeader } from "@/components/app-layout";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { formatDateTime, statusLabel } from "@/lib/format";
+import { formatDateTime, statusLabel, formatCurrency } from "@/lib/format";
 import { seedDemoData } from "@/lib/seed";
 import { useAuth } from "@/hooks/use-auth";
 import { toast } from "sonner";
@@ -146,6 +147,14 @@ function DashboardPage() {
         <StatCard label="Clientes ativos" value={stats?.clientes ?? 0} icon={Users} />
         <StatCard label="Equipamentos" value={stats?.equipamentos ?? 0} icon={Wrench} />
       </div>
+
+      {hasPermission('financeiro.view') && (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+          <StatCard label="Receita Líquida" value={formatCurrency(stats?.receita ?? 0)} icon={DollarSign} variant="success" />
+          <StatCard label="Despesa Total" value={formatCurrency(stats?.despesa ?? 0)} icon={DollarSign} variant="danger" />
+          <StatCard label="Saldo de Caixa" value={formatCurrency(stats?.saldo ?? 0)} icon={DollarSign} variant={ (stats?.saldo ?? 0) >= 0 ? "success" : "danger" } />
+        </div>
+      )}
 
       <div className="grid lg:grid-cols-3 gap-4 mb-6">
         <Card className="p-5 lg:col-span-2">
