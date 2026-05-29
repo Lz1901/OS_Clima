@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Plus, Pencil, Trash2, ListChecks, ChevronRight, Save, X, GripVertical } from "lucide-react";
 import { toast } from "sonner";
@@ -114,7 +114,6 @@ function TemplateDialog({ open, onOpenChange, template }: any) {
   });
 
   // Handle template change when dialog opens/reopens
-  import { useEffect } from "react";
   useEffect(() => {
     if (open) {
       if (template) {
