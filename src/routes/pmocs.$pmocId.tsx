@@ -238,6 +238,16 @@ function PmocWizard() {
         pdf_url: pdfUrl,
       }).eq("id", pmocId);
 
+      // Atualizar status dos equipamentos conforme as respostas
+      for (const eqId of selectedEquipIds) {
+        const temErro = Object.values(respostas[eqId] ?? {}).some(r => r.valor === "false");
+        if (temErro) {
+          await supabase.from("equipamentos").update({ status: "manutencao" }).eq("id", eqId);
+        } else {
+          await supabase.from("equipamentos").update({ status: "ativo" }).eq("id", eqId);
+        }
+      }
+
       await supabase.from("notificacoes").insert({
         company_id: profile!.company_id,
         tipo: "pmoc_finalizada",
