@@ -164,9 +164,15 @@ function NewPmocDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (v
   });
   const { data: unidades = [] } = useQuery({
     queryKey: ["unidades-mini", form.cliente_id],
-    queryFn: async () => form.cliente_id
-      ? (await supabase.from("unidades").select("id, nome").eq("cliente_id", form.cliente_id).order("nome")).data ?? []
-      : [],
+    queryFn: async () => {
+      if (!form.cliente_id) return [];
+      const { data } = await supabase
+        .from("unidades")
+        .select("id, nome, equipamentos(id)")
+        .eq("cliente_id", form.cliente_id)
+        .order("nome");
+      return data ?? [];
+    },
     enabled: !!form.cliente_id,
   });
   const { data: templates = [] } = useQuery({
@@ -219,7 +225,11 @@ function NewPmocDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (v
             <Select value={form.unidade_id ?? ""} onValueChange={(v) => setForm({ ...form, unidade_id: v })} disabled={!form.cliente_id}>
               <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
               <SelectContent>
-                {(unidades as any[]).map((u) => <SelectItem key={u.id} value={u.id}>{u.nome}</SelectItem>)}
+                {(unidades as any[]).map((u) => (
+                  <SelectItem key={u.id} value={u.id}>
+                    {u.nome} {u.equipamentos?.length === 0 ? "(Sem equipamentos)" : `(${u.equipamentos?.length} eq.)`}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
