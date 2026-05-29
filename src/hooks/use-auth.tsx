@@ -8,15 +8,24 @@ interface Profile {
   nome: string;
   email: string;
   avatar_url: string | null;
+  is_super_admin: boolean;
+}
+
+interface Permission {
+  id: string;
+  nome: string;
+  modulo: string;
 }
 
 interface AuthCtx {
   user: User | null;
   session: Session | null;
   profile: Profile | null;
+  permissions: string[];
   loading: boolean;
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
+  hasPermission: (permissionId: string) => boolean;
 }
 
 const Ctx = createContext<AuthCtx | undefined>(undefined);
@@ -25,15 +34,40 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
+  const [permissions, setPermissions] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
 
   const loadProfile = async (uid: string) => {
-    const { data } = await supabase
+    const { data: profileData } = await supabase
       .from("profiles")
       .select("*")
       .eq("id", uid)
       .maybeSingle();
-    setProfile((data as Profile) ?? null);
+    
+    if (profileData) {
+      setProfile(profileData as Profile);
+      
+      // Load permissions
+      const { data: rolesData } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", uid);
+      
+      if (rolesData && rolesData.length > 0) {
+        const roles = rolesData.map(r => r.role);
+        const { data: permData } = await supabase
+          .from("role_permissions")
+          .select("permission_id")
+          .in("role", roles);
+        
+        if (permData) {
+          setPermissions(permData.map(p => p.permission_id));
+        }
+      }
+    } else {
+      setProfile(null);
+      setPermissions([]);
+    }
   };
 
   useEffect(() => {
@@ -44,6 +78,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setTimeout(() => loadProfile(sess.user.id), 0);
       } else {
         setProfile(null);
+        setPermissions([]);
       }
     });
 
@@ -60,6 +95,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signOut = async () => {
     await supabase.auth.signOut();
     setProfile(null);
+    setPermissions([]);
+  };
+
+  const hasPermission = (permissionId: string) => {
+    if (profile?.is_super_admin) return true;
+    return permissions.includes(permissionId);
   };
 
   const refreshProfile = async () => {
@@ -67,7 +108,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <Ctx.Provider value={{ user, session, profile, loading, signOut, refreshProfile }}>
+    <Ctx.Provider value={{ user, session, profile, permissions, loading, signOut, refreshProfile, hasPermission }}>
       {children}
     </Ctx.Provider>
   );

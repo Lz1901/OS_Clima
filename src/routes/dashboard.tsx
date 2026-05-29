@@ -8,6 +8,7 @@ import {
   TrendingUp,
   CheckCircle2,
   Clock,
+  DollarSign,
 } from "lucide-react";
 import {
   ResponsiveContainer,
@@ -23,7 +24,7 @@ import { AppLayout, PageHeader } from "@/components/app-layout";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { formatDateTime, statusLabel } from "@/lib/format";
+import { formatDateTime, statusLabel, formatCurrency } from "@/lib/format";
 import { seedDemoData } from "@/lib/seed";
 import { useAuth } from "@/hooks/use-auth";
 import { toast } from "sonner";
@@ -72,24 +73,47 @@ function StatCard({
 }
 
 function DashboardPage() {
-  const { profile } = useAuth();
+  const { profile, hasPermission } = useAuth();
   const qc = useQueryClient();
+  
   const { data: stats } = useQuery({
     queryKey: ["dashboard-stats"],
     queryFn: async () => {
-      const [pmocsAll, clientes, equipamentos] = await Promise.all([
+      const [pmocsRes, clientesRes, equipamentosRes] = await Promise.all([
         supabase.from("pmocs").select("id,status,created_at,data_finalizacao"),
         supabase.from("clientes").select("id", { count: "exact", head: true }),
         supabase.from("equipamentos").select("id", { count: "exact", head: true }),
       ]);
-      const pmocs = pmocsAll.data ?? [];
+
+      const pmocs = pmocsRes.data ?? [];
+      const clientesCount = clientesRes.count ?? 0;
+      const equipamentosCount = equipamentosRes.count ?? 0;
+      
+      let receita = 0;
+      let despesa = 0;
+      
+      if (hasPermission('financeiro.view')) {
+        const { data: transData } = await supabase
+          .from("financial_transactions")
+          .select("valor, tipo")
+          .eq("status", "pago");
+          
+        if (transData) {
+          receita = transData.filter((t: any) => t.tipo === 'receita').reduce((acc: number, t: any) => acc + Number(t.valor), 0);
+          despesa = transData.filter((t: any) => t.tipo === 'despesa').reduce((acc: number, t: any) => acc + Number(t.valor), 0);
+        }
+      }
+
       return {
         totalPmocs: pmocs.length,
         finalizados: pmocs.filter((p: any) => p.status === "finalizado").length,
         pendentes: pmocs.filter((p: any) => ["pendente", "em_andamento"].includes(p.status)).length,
-        clientes: clientes.count ?? 0,
-        equipamentos: equipamentos.count ?? 0,
+        clientes: clientesCount,
+        equipamentos: equipamentosCount,
         pmocs,
+        receita,
+        despesa,
+        saldo: receita - despesa
       };
     },
   });
@@ -146,6 +170,14 @@ function DashboardPage() {
         <StatCard label="Clientes ativos" value={stats?.clientes ?? 0} icon={Users} />
         <StatCard label="Equipamentos" value={stats?.equipamentos ?? 0} icon={Wrench} />
       </div>
+
+      {hasPermission('financeiro.view') && (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+          <StatCard label="Receita Líquida" value={formatCurrency(stats?.receita ?? 0)} icon={DollarSign} variant="success" />
+          <StatCard label="Despesa Total" value={formatCurrency(stats?.despesa ?? 0)} icon={DollarSign} variant="danger" />
+          <StatCard label="Saldo de Caixa" value={formatCurrency(stats?.saldo ?? 0)} icon={DollarSign} variant={ (stats?.saldo ?? 0) >= 0 ? "success" : "danger" } />
+        </div>
+      )}
 
       <div className="grid lg:grid-cols-3 gap-4 mb-6">
         <Card className="p-5 lg:col-span-2">

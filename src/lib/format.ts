@@ -52,3 +52,12 @@ export const roleLabel: Record<string, string> = {
   financeiro: "Financeiro",
   supervisor: "Supervisor",
 };
+
+export const formatCurrency = (v: number | string | null) => {
+  if (v === null || v === undefined) return "R$ 0,00";
+  const value = typeof v === "string" ? parseFloat(v) : v;
+  return new Intl.NumberFormat("pt-BR", {
+    style: "currency",
+    currency: "BRL",
+  }).format(value);
+};
