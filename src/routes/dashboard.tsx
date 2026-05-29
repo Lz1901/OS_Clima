@@ -73,24 +73,44 @@ function StatCard({
 }
 
 function DashboardPage() {
-  const { profile } = useAuth();
+  const { profile, hasPermission } = useAuth();
   const qc = useQueryClient();
+  
   const { data: stats } = useQuery({
     queryKey: ["dashboard-stats"],
     queryFn: async () => {
-      const [pmocsAll, clientes, equipamentos] = await Promise.all([
+      const queries: Promise<any>[] = [
         supabase.from("pmocs").select("id,status,created_at,data_finalizacao"),
         supabase.from("clientes").select("id", { count: "exact", head: true }),
         supabase.from("equipamentos").select("id", { count: "exact", head: true }),
-      ]);
-      const pmocs = pmocsAll.data ?? [];
+      ];
+
+      if (hasPermission('financeiro.view')) {
+        queries.push(supabase.from("financial_transactions").select("valor, tipo").eq("status", "pago"));
+      }
+
+      const results = await Promise.all(queries);
+      const pmocs = results[0].data ?? [];
+      const clientesCount = results[1].count ?? 0;
+      const equipamentosCount = results[2].count ?? 0;
+      
+      let receita = 0;
+      let despesa = 0;
+      if (results[3]?.data) {
+        receita = results[3].data.filter((t: any) => t.tipo === 'receita').reduce((acc: number, t: any) => acc + Number(t.valor), 0);
+        despesa = results[3].data.filter((t: any) => t.tipo === 'despesa').reduce((acc: number, t: any) => acc + Number(t.valor), 0);
+      }
+
       return {
         totalPmocs: pmocs.length,
         finalizados: pmocs.filter((p: any) => p.status === "finalizado").length,
         pendentes: pmocs.filter((p: any) => ["pendente", "em_andamento"].includes(p.status)).length,
-        clientes: clientes.count ?? 0,
-        equipamentos: equipamentos.count ?? 0,
+        clientes: clientesCount,
+        equipamentos: equipamentosCount,
         pmocs,
+        receita,
+        despesa,
+        saldo: receita - despesa
       };
     },
   });
