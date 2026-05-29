@@ -119,6 +119,8 @@ function PmocsPage() {
                     </p>
                     <p className="text-xs text-muted-foreground">
                       Agendado: {formatDate(p.data_agendada)} · Finalizado: {formatDate(p.data_finalizacao)}
+                      {p.periodicidade ? ` · ${p.periodicidade}` : ""}
+                      {p.proxima_execucao ? ` · Próxima: ${formatDate(p.proxima_execucao)}` : ""}
                     </p>
                   </div>
                 </button>
