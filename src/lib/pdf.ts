@@ -33,7 +33,7 @@ export type PmocPdfData = {
     tipo: string;
     numero_serie?: string | null;
     localizacao?: string | null;
-    respostas: { label: string; categoria?: string | null; valor: string | null; tipo_campo: string }[];
+    respostas: { label: string; categoria?: string | null; valor: string | null; tipo_campo: string; foto_url?: string | null }[];
   }[];
   assinaturas: { tipo: string; nome: string; imagem_url: string }[];
 };
@@ -150,16 +150,29 @@ export async function generatePmocPdf(data: PmocPdfData): Promise<Blob> {
 
     doc.setFont("helvetica", "normal").setFontSize(9);
     for (const r of eq.respostas) {
-      ensure(6);
+      ensure(12);
       const valor =
         r.tipo_campo === "checkbox"
           ? r.valor === "true" ? "✓ OK" : "✗ Não realizado"
           : (r.valor ?? "—");
       const cat = r.categoria ? `[${r.categoria}] ` : "";
       const text = `${cat}${r.label}: ${valor}`;
-      const split = doc.splitTextToSize(text, pageW - margin * 2 - 4);
+      const split = doc.splitTextToSize(text, pageW - margin * 2 - 15);
+      
+      doc.setFont("helvetica", "normal").setFontSize(9);
       doc.text(split, margin + 2, y + 4);
-      y += split.length * 5;
+
+      if (r.foto_url) {
+        const itemFoto = await loadImage(r.foto_url);
+        if (itemFoto) {
+          try {
+            // Add a small thumbnail next to the item
+            doc.addImage(itemFoto, "JPEG", pageW - margin - 12, y, 10, 10);
+          } catch { /* noop */ }
+        }
+      }
+      
+      y += Math.max(split.length * 5, r.foto_url ? 12 : 5);
     }
     y += 4;
   }
