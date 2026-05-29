@@ -221,6 +221,7 @@ function PmocWizard() {
           respostas: (items as any[]).map((it) => ({
             label: it.label, categoria: it.categoria, tipo_campo: it.tipo_campo,
             valor: respostas[eq.id]?.[it.id]?.valor ?? null,
+            foto_url: respostas[eq.id]?.[it.id]?.foto_url ?? null,
           })),
         })),
         assinaturas: [
@@ -321,9 +322,23 @@ function PmocWizard() {
         <Card className="p-4">
           <h2 className="font-semibold mb-3">Selecione os equipamentos a inspecionar</h2>
           {(equipamentos as any[]).length === 0 ? (
-            <p className="text-sm text-muted-foreground">Nenhum equipamento cadastrado nesta unidade.</p>
+            <div className="text-center py-6">
+              <p className="text-sm text-muted-foreground mb-4">Nenhum equipamento cadastrado nesta unidade.</p>
+              <Button variant="outline" size="sm" asChild>
+                <Link to="/equipamentos">Ir para Equipamentos</Link>
+              </Button>
+            </div>
           ) : (
             <div className="space-y-2">
+              <div className="flex justify-between items-center mb-2">
+                <span className="text-xs text-muted-foreground">{selectedEquipIds.size} selecionado(s)</span>
+                <Button variant="link" size="sm" className="h-auto p-0" onClick={() => {
+                  if (selectedEquipIds.size === (equipamentos as any[]).length) setSelectedEquipIds(new Set());
+                  else setSelectedEquipIds(new Set((equipamentos as any[]).map(e => e.id)));
+                }}>
+                  {selectedEquipIds.size === (equipamentos as any[]).length ? "Desmarcar todos" : "Selecionar todos"}
+                </Button>
+              </div>
               {(equipamentos as any[]).map((e) => (
                 <label key={e.id} className="flex items-center gap-3 p-3 rounded-lg border hover:bg-accent cursor-pointer">
                   <Checkbox
