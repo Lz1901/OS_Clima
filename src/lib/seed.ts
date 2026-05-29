@@ -73,5 +73,38 @@ export async function seedDemoData(companyId: string, userId: string) {
     { pmoc_id: pmoc.id, equipamento_id: eq2!.id },
   ]);
 
+  // 6. Financeiro
+  const { data: cats } = await supabase.from("financial_categories").select("id, tipo").eq("company_id", companyId);
+  if (cats) {
+    const receitaCat = cats.find(c => c.tipo === 'receita');
+    const despesaCat = cats.find(c => c.tipo === 'despesa');
+
+    if (receitaCat && despesaCat) {
+      await supabase.from("financial_transactions").insert([
+        {
+          company_id: companyId,
+          cliente_id: cliente.id,
+          categoria_id: receitaCat.id,
+          tipo: 'receita',
+          descricao: 'Mensalidade Contrato Shopping',
+          valor: 2500.00,
+          data_vencimento: new Date().toISOString().split('T')[0],
+          status: 'pago',
+          data_pagamento: new Date().toISOString()
+        },
+        {
+          company_id: companyId,
+          categoria_id: despesaCat.id,
+          tipo: 'despesa',
+          descricao: 'Combustível Frota',
+          valor: 450.00,
+          data_vencimento: new Date().toISOString().split('T')[0],
+          status: 'pago',
+          data_pagamento: new Date().toISOString()
+        }
+      ]);
+    }
+  }
+
   return true;
 }
