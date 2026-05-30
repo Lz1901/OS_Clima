@@ -791,6 +791,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "pmocs_pmoc_origem_id_fkey"
+            columns: ["pmoc_origem_id"]
+            isOneToOne: false
+            referencedRelation: "pmocs"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "pmocs_template_id_fkey"
             columns: ["template_id"]
             isOneToOne: false
