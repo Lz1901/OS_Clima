@@ -80,8 +80,8 @@ function AuthPage() {
           <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary text-primary-foreground mb-3">
             <Snowflake className="h-6 w-6" />
           </div>
-          <h1 className="text-2xl font-bold tracking-tight">PMOC Pro</h1>
-          <p className="text-sm text-muted-foreground">Gestão digital de climatização</p>
+          <h1 className="text-2xl font-bold tracking-tight">ClimaOS</h1>
+          <p className="text-sm text-muted-foreground">Sistema Operacional para Climatização</p>
         </div>
 
         <Card className="p-6">

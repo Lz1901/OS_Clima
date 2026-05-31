@@ -237,6 +237,7 @@ export type Database = {
       companies: {
         Row: {
           assinatura_url: string | null
+          block_reason: string | null
           cnpj: string | null
           cor_primaria: string | null
           crea: string | null
@@ -247,11 +248,14 @@ export type Database = {
           logo_url: string | null
           nome: string
           responsavel_tecnico: string | null
+          status: Database["public"]["Enums"]["company_status"]
+          suspended_at: string | null
           telefone: string | null
           updated_at: string
         }
         Insert: {
           assinatura_url?: string | null
+          block_reason?: string | null
           cnpj?: string | null
           cor_primaria?: string | null
           crea?: string | null
@@ -262,11 +266,14 @@ export type Database = {
           logo_url?: string | null
           nome: string
           responsavel_tecnico?: string | null
+          status?: Database["public"]["Enums"]["company_status"]
+          suspended_at?: string | null
           telefone?: string | null
           updated_at?: string
         }
         Update: {
           assinatura_url?: string | null
+          block_reason?: string | null
           cnpj?: string | null
           cor_primaria?: string | null
           crea?: string | null
@@ -277,6 +284,8 @@ export type Database = {
           logo_url?: string | null
           nome?: string
           responsavel_tecnico?: string | null
+          status?: Database["public"]["Enums"]["company_status"]
+          suspended_at?: string | null
           telefone?: string | null
           updated_at?: string
         }
@@ -997,6 +1006,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_company_active: { Args: { _user_id: string }; Returns: boolean }
       is_super_admin: { Args: { _user_id: string }; Returns: boolean }
     }
     Enums: {
@@ -1008,6 +1018,7 @@ export type Database = {
         | "selecao"
         | "foto"
         | "observacao"
+      company_status: "ativa" | "suspensa" | "bloqueada"
       equipamento_status: "ativo" | "inativo" | "manutencao" | "defeito"
       equipamento_tipo:
         | "split"
@@ -1160,6 +1171,7 @@ export const Constants = {
         "foto",
         "observacao",
       ],
+      company_status: ["ativa", "suspensa", "bloqueada"],
       equipamento_status: ["ativo", "inativo", "manutencao", "defeito"],
       equipamento_tipo: [
         "split",

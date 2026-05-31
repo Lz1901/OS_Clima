@@ -1,194 +1,343 @@
-import { useState, useEffect } from "react";
-import { AppLayout } from "@/components/app-layout";
+import { useState } from "react";
+import { createFileRoute } from "@tanstack/react-router";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
+import { AppLayout, PageHeader } from "@/components/app-layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
+  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { useAuth } from "@/hooks/use-auth";
-import { supabase } from "@/integrations/supabase/client";
-import { toast } from "sonner";
-import { Building2, Users, ClipboardCheck, DollarSign, Search, ShieldAlert } from "lucide-react";
 import { Input } from "@/components/ui/input";
-import { formatCurrency, formatDate } from "@/lib/format";
+import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { createFileRoute } from "@tanstack/react-router";
-
+import {
+  Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger,
+} from "@/components/ui/dialog";
+import {
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { useAuth } from "@/hooks/use-auth";
+import { toast } from "sonner";
+import {
+  Building2, Users, ClipboardCheck, DollarSign, Search, ShieldAlert,
+  Plus, MoreVertical, Ban, CheckCircle2, KeyRound, Trash2, Wrench, TrendingUp,
+} from "lucide-react";
+import { formatCurrency, formatDate } from "@/lib/format";
+import {
+  adminGlobalStats, adminListCompanies, adminCreateCompany,
+  adminSetCompanyStatus, adminResetUserPassword, adminDeleteCompany,
+} from "@/lib/admin.functions";
 
 export const Route = createFileRoute("/admin")({
   component: SuperAdminPage,
 });
 
+function statusBadge(status: string) {
+  const map: Record<string, { label: string; cls: string }> = {
+    ativa: { label: "Ativa", cls: "bg-emerald-100 text-emerald-700 border-emerald-200" },
+    suspensa: { label: "Suspensa", cls: "bg-amber-100 text-amber-700 border-amber-200" },
+    bloqueada: { label: "Bloqueada", cls: "bg-red-100 text-red-700 border-red-200" },
+  };
+  const s = map[status] ?? map.ativa;
+  return <Badge variant="outline" className={s.cls}>{s.label}</Badge>;
+}
+
 function SuperAdminPage() {
   const { profile } = useAuth();
-  const [loading, setLoading] = useState(true);
-  const [companies, setCompanies] = useState<any[]>([]);
-  const [stats, setStats] = useState({ companies: 0, users: 0, pmocs: 0, totalRevenue: 0 });
-  const [searchTerm, setSearchTerm] = useState("");
+  const qc = useQueryClient();
+  const [search, setSearch] = useState("");
+  const [createOpen, setCreateOpen] = useState(false);
 
-  const fetchGlobalStats = async () => {
-    if (!profile?.is_super_admin) return;
-    setLoading(true);
-    try {
-      // For Super Admin, we might need a separate API or use a service role client
-      // Since we are in the client side, RLS will block if we aren't careful.
-      // But we added a bypass for Super Admin in 'check_user_permission' function logic (sort of)
-      // Actually, standard RLS policies I created earlier don't have the bypass yet.
-      
-      // Let's assume for now we use a server-side route or a special bypass.
-      // I'll update the RLS policies in a bit to allow Super Admin access.
-      
-      const [compRes, usersRes, pmocRes, transRes] = await Promise.all([
-        supabase.from("companies").select("*"),
-        supabase.from("profiles").select("id", { count: 'exact' }),
-        supabase.from("pmocs").select("id", { count: 'exact' }),
-        supabase.from("financial_transactions").select("valor").eq("status", "pago").eq("tipo", "receita")
-      ]);
+  const getStats = useServerFn(adminGlobalStats);
+  const listCompanies = useServerFn(adminListCompanies);
+  const createCompany = useServerFn(adminCreateCompany);
+  const setStatus = useServerFn(adminSetCompanyStatus);
+  const resetPwd = useServerFn(adminResetUserPassword);
+  const deleteCompany = useServerFn(adminDeleteCompany);
 
-      if (compRes.data) setCompanies(compRes.data);
-      setStats({
-        companies: compRes.data?.length || 0,
-        users: usersRes.count || 0,
-        pmocs: pmocRes.count || 0,
-        totalRevenue: transRes.data?.reduce((acc, t) => acc + Number(t.valor), 0) || 0
-      });
-    } catch (error) {
-      console.error(error);
-      toast.error("Erro ao carregar dados globais");
-    } finally {
-      setLoading(false);
-    }
+  const enabled = !!profile?.is_super_admin;
+
+  const stats = useQuery({
+    queryKey: ["admin", "stats"],
+    queryFn: () => getStats(),
+    enabled,
+  });
+  const companies = useQuery({
+    queryKey: ["admin", "companies"],
+    queryFn: () => listCompanies(),
+    enabled,
+  });
+
+  const invalidate = () => {
+    qc.invalidateQueries({ queryKey: ["admin"] });
   };
 
-  useEffect(() => {
-    if (profile?.is_super_admin) {
-      fetchGlobalStats();
-    }
-  }, [profile]);
+  const mCreate = useMutation({
+    mutationFn: (input: { nome: string; email: string; cnpj: string | null; telefone: string | null; adminNome: string; adminSenha: string }) => createCompany({ data: input }),
+    onSuccess: () => { toast.success("Empresa criada"); setCreateOpen(false); invalidate(); },
+    onError: (e: Error) => toast.error(e.message),
+  });
 
-  if (!profile?.is_super_admin) {
+  const mStatus = useMutation({
+    mutationFn: (input: { companyId: string; status: "ativa" | "suspensa" | "bloqueada"; reason?: string | null }) => setStatus({ data: input }),
+    onSuccess: () => { toast.success("Status atualizado"); invalidate(); },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const mDelete = useMutation({
+    mutationFn: (companyId: string) => deleteCompany({ data: { companyId } }),
+    onSuccess: () => { toast.success("Empresa excluída"); invalidate(); },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  if (!profile) {
+    return <AppLayout><div className="p-8">Carregando...</div></AppLayout>;
+  }
+  if (!profile.is_super_admin) {
     return (
       <AppLayout>
-        <div className="flex flex-col items-center justify-center h-full space-y-4">
-          <ShieldAlert className="h-12 w-12 text-red-500" />
+        <div className="flex flex-col items-center justify-center py-24 space-y-4">
+          <ShieldAlert className="h-12 w-12 text-destructive" />
           <h1 className="text-2xl font-bold">Acesso Negado</h1>
-          <p className="text-muted-foreground">Você não tem permissão para acessar esta área.</p>
+          <p className="text-muted-foreground">Esta área é exclusiva do Super Admin do ClimaOS.</p>
         </div>
       </AppLayout>
     );
   }
 
-  const filteredCompanies = companies.filter(c => 
-    c.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    c.cnpj?.includes(searchTerm)
-  );
+  const list = (companies.data?.companies ?? []).filter((c: any) => {
+    if (!search) return true;
+    const q = search.toLowerCase();
+    return (
+      c.nome?.toLowerCase().includes(q) ||
+      c.cnpj?.toLowerCase().includes(q) ||
+      c.email?.toLowerCase().includes(q)
+    );
+  });
+
+  const s = stats.data;
 
   return (
     <AppLayout>
-      <div className="p-4 md:p-8 space-y-8 max-w-7xl mx-auto">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Painel Super Admin</h1>
-          <p className="text-muted-foreground">Visão global de todos os tenants e métricas do SaaS.</p>
-        </div>
+      <PageHeader
+        title="Painel Super Admin"
+        description="Visão global do ClimaOS — todas as empresas e métricas do SaaS."
+        action={
+          <Dialog open={createOpen} onOpenChange={setCreateOpen}>
+            <DialogTrigger asChild>
+              <Button><Plus className="h-4 w-4 mr-2" /> Nova empresa</Button>
+            </DialogTrigger>
+            <CreateCompanyDialog onSubmit={(d) => mCreate.mutate(d)} loading={mCreate.isPending} />
+          </Dialog>
+        }
+      />
 
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium">Empresas</CardTitle>
-              <Building2 className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stats.companies}</div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium">Usuários Totais</CardTitle>
-              <Users className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stats.users}</div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium">PMOCs Gerados</CardTitle>
-              <ClipboardCheck className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stats.pmocs}</div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium">Faturamento Global</CardTitle>
-              <DollarSign className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{formatCurrency(stats.totalRevenue)}</div>
-            </CardContent>
-          </Card>
-        </div>
-
-        <Card>
-          <CardHeader>
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-              <CardTitle>Empresas Clientes</CardTitle>
-              <div className="relative w-full md:w-64">
-                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Buscar empresa..."
-                  className="pl-8"
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                />
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Empresa</TableHead>
-                  <TableHead>CNPJ</TableHead>
-                  <TableHead>Responsável</TableHead>
-                  <TableHead>Data Cadastro</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="text-right">Ações</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {loading ? (
-                  <TableRow><TableCell colSpan={6} className="text-center py-8">Carregando...</TableCell></TableRow>
-                ) : filteredCompanies.length === 0 ? (
-                  <TableRow><TableCell colSpan={6} className="text-center py-8 text-muted-foreground">Nenhuma empresa encontrada.</TableCell></TableRow>
-                ) : (
-                  filteredCompanies.map((c) => (
-                    <TableRow key={c.id}>
-                      <TableCell className="font-medium">{c.nome}</TableCell>
-                      <TableCell>{c.cnpj || "-"}</TableCell>
-                      <TableCell>{c.responsavel_tecnico || "-"}</TableCell>
-                      <TableCell>{formatDate(c.created_at)}</TableCell>
-                      <TableCell>
-                        <Badge className="bg-green-100 text-green-700 hover:bg-green-100 border-none">Ativo</Badge>
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <Button variant="ghost" size="sm">Ver detalhes</Button>
-                        <Button variant="ghost" size="sm" className="text-red-600">Bloquear</Button>
-                      </TableCell>
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          </CardContent>
-        </Card>
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+        <StatCard icon={Building2} label="Empresas" value={s?.totalCompanies ?? "—"} hint={`${s?.ativas ?? 0} ativas · ${s?.suspensas ?? 0} suspensas`} />
+        <StatCard icon={Users} label="Usuários" value={s?.totalUsers ?? "—"} />
+        <StatCard icon={ClipboardCheck} label="PMOCs" value={s?.totalPmocs ?? "—"} hint={`${s?.pmocsFinalizados ?? 0} finalizados`} />
+        <StatCard icon={Wrench} label="Equipamentos" value={s?.totalEquipamentos ?? "—"} />
+        <StatCard icon={DollarSign} label="Receita total" value={formatCurrency(s?.receitaTotal ?? 0)} />
+        <StatCard icon={TrendingUp} label="Receita mensal" value={formatCurrency(s?.receitaMensal ?? 0)} />
+        <StatCard icon={Ban} label="Bloqueadas" value={s?.bloqueadas ?? 0} />
+        <StatCard icon={CheckCircle2} label="Ativas" value={s?.ativas ?? 0} />
       </div>
+
+      <Card>
+        <CardHeader>
+          <div className="flex flex-col md:flex-row gap-3 md:items-center md:justify-between">
+            <CardTitle>Empresas clientes</CardTitle>
+            <div className="relative w-full md:w-72">
+              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Input placeholder="Buscar por nome, CNPJ ou email…" className="pl-8" value={search} onChange={(e) => setSearch(e.target.value)} />
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent className="overflow-x-auto">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Empresa</TableHead>
+                <TableHead>Email</TableHead>
+                <TableHead>Usuários</TableHead>
+                <TableHead>PMOCs</TableHead>
+                <TableHead>Equipamentos</TableHead>
+                <TableHead>Cadastro</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead className="text-right">Ações</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {companies.isLoading ? (
+                <TableRow><TableCell colSpan={8} className="text-center py-8 text-muted-foreground">Carregando…</TableCell></TableRow>
+              ) : list.length === 0 ? (
+                <TableRow><TableCell colSpan={8} className="text-center py-8 text-muted-foreground">Nenhuma empresa encontrada.</TableCell></TableRow>
+              ) : list.map((c: any) => (
+                <TableRow key={c.id}>
+                  <TableCell>
+                    <div className="font-medium">{c.nome}</div>
+                    <div className="text-xs text-muted-foreground">{c.cnpj ?? "—"}</div>
+                  </TableCell>
+                  <TableCell className="text-sm">{c.email ?? "—"}</TableCell>
+                  <TableCell>{c.users_count}</TableCell>
+                  <TableCell>{c.pmocs_count}</TableCell>
+                  <TableCell>{c.equipamentos_count}</TableCell>
+                  <TableCell className="text-sm text-muted-foreground">{formatDate(c.created_at)}</TableCell>
+                  <TableCell>{statusBadge(c.status)}</TableCell>
+                  <TableCell className="text-right">
+                    <CompanyActions
+                      company={c}
+                      onStatus={(status) => mStatus.mutate({ companyId: c.id, status })}
+                      onReset={async (email, pwd) => {
+                        try {
+                          await resetPwd({ data: { email, newPassword: pwd } });
+                          toast.success("Senha redefinida");
+                        } catch (e: any) { toast.error(e.message); }
+                      }}
+                      onDelete={() => mDelete.mutate(c.id)}
+                    />
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
     </AppLayout>
+  );
+}
+
+function StatCard({ icon: Icon, label, value, hint }: { icon: any; label: string; value: any; hint?: string }) {
+  return (
+    <Card>
+      <CardHeader className="flex flex-row items-center justify-between pb-2">
+        <CardTitle className="text-sm font-medium text-muted-foreground">{label}</CardTitle>
+        <Icon className="h-4 w-4 text-muted-foreground" />
+      </CardHeader>
+      <CardContent>
+        <div className="text-2xl font-bold">{value}</div>
+        {hint && <p className="text-xs text-muted-foreground mt-1">{hint}</p>}
+      </CardContent>
+    </Card>
+  );
+}
+
+function CreateCompanyDialog({ onSubmit, loading }: { onSubmit: (d: any) => void; loading: boolean }) {
+  const [form, setForm] = useState({
+    nome: "", email: "", cnpj: "", telefone: "", adminNome: "", adminSenha: "",
+  });
+  return (
+    <DialogContent>
+      <DialogHeader>
+        <DialogTitle>Nova empresa</DialogTitle>
+        <DialogDescription>Cria a empresa e o usuário administrador (com senha definida por você).</DialogDescription>
+      </DialogHeader>
+      <div className="space-y-3">
+        <div className="grid grid-cols-2 gap-3">
+          <div className="space-y-1"><Label>Nome da empresa *</Label><Input value={form.nome} onChange={(e) => setForm({ ...form, nome: e.target.value })} /></div>
+          <div className="space-y-1"><Label>CNPJ</Label><Input value={form.cnpj} onChange={(e) => setForm({ ...form, cnpj: e.target.value })} /></div>
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+          <div className="space-y-1"><Label>Email do admin *</Label><Input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} /></div>
+          <div className="space-y-1"><Label>Telefone</Label><Input value={form.telefone} onChange={(e) => setForm({ ...form, telefone: e.target.value })} /></div>
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+          <div className="space-y-1"><Label>Nome do admin *</Label><Input value={form.adminNome} onChange={(e) => setForm({ ...form, adminNome: e.target.value })} /></div>
+          <div className="space-y-1"><Label>Senha inicial *</Label><Input type="password" minLength={8} value={form.adminSenha} onChange={(e) => setForm({ ...form, adminSenha: e.target.value })} /></div>
+        </div>
+      </div>
+      <DialogFooter>
+        <Button
+          disabled={loading || !form.nome || !form.email || !form.adminNome || form.adminSenha.length < 8}
+          onClick={() => onSubmit({
+            nome: form.nome.trim(),
+            email: form.email.trim(),
+            cnpj: form.cnpj.trim() || null,
+            telefone: form.telefone.trim() || null,
+            adminNome: form.adminNome.trim(),
+            adminSenha: form.adminSenha,
+          })}
+        >
+          {loading ? "Criando…" : "Criar empresa"}
+        </Button>
+      </DialogFooter>
+    </DialogContent>
+  );
+}
+
+function CompanyActions({
+  company, onStatus, onReset, onDelete,
+}: {
+  company: any;
+  onStatus: (s: "ativa" | "suspensa" | "bloqueada") => void;
+  onReset: (email: string, newPassword: string) => void;
+  onDelete: () => void;
+}) {
+  const [resetOpen, setResetOpen] = useState(false);
+  const [email, setEmail] = useState(company.email ?? "");
+  const [pwd, setPwd] = useState("");
+
+  return (
+    <>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant="ghost" size="icon"><MoreVertical className="h-4 w-4" /></Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end">
+          <DropdownMenuLabel>Gerenciar</DropdownMenuLabel>
+          <DropdownMenuSeparator />
+          {company.status !== "ativa" && (
+            <DropdownMenuItem onClick={() => onStatus("ativa")}>
+              <CheckCircle2 className="h-4 w-4 mr-2" /> Reativar
+            </DropdownMenuItem>
+          )}
+          {company.status !== "suspensa" && (
+            <DropdownMenuItem onClick={() => onStatus("suspensa")}>
+              <Ban className="h-4 w-4 mr-2" /> Suspender
+            </DropdownMenuItem>
+          )}
+          {company.status !== "bloqueada" && (
+            <DropdownMenuItem onClick={() => onStatus("bloqueada")} className="text-destructive">
+              <Ban className="h-4 w-4 mr-2" /> Bloquear
+            </DropdownMenuItem>
+          )}
+          <DropdownMenuSeparator />
+          <DropdownMenuItem onClick={() => setResetOpen(true)}>
+            <KeyRound className="h-4 w-4 mr-2" /> Redefinir senha
+          </DropdownMenuItem>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem
+            className="text-destructive"
+            onClick={() => {
+              if (confirm(`Excluir definitivamente "${company.nome}"? Esta ação remove todos os dados da empresa.`)) onDelete();
+            }}
+          >
+            <Trash2 className="h-4 w-4 mr-2" /> Excluir empresa
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+
+      <Dialog open={resetOpen} onOpenChange={setResetOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Redefinir senha</DialogTitle>
+            <DialogDescription>Informe o email do usuário desta empresa e a nova senha.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div className="space-y-1"><Label>Email</Label><Input value={email} onChange={(e) => setEmail(e.target.value)} /></div>
+            <div className="space-y-1"><Label>Nova senha (mín. 8)</Label><Input type="password" minLength={8} value={pwd} onChange={(e) => setPwd(e.target.value)} /></div>
+          </div>
+          <DialogFooter>
+            <Button
+              disabled={!email || pwd.length < 8}
+              onClick={() => { onReset(email, pwd); setResetOpen(false); setPwd(""); }}
+            >
+              Redefinir
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }

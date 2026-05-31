@@ -33,7 +33,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
 
       <div className="flex-1 flex flex-col overflow-hidden">
         <header className="md:hidden flex items-center justify-between border-b border-border bg-card px-4 py-3">
-          <span className="font-semibold">PMOC Pro</span>
+          <span className="font-semibold">ClimaOS</span>
           <Sheet open={open} onOpenChange={setOpen}>
             <SheetTrigger asChild>
               <Button variant="ghost" size="icon">
