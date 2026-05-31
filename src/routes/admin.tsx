@@ -74,13 +74,13 @@ function SuperAdminPage() {
   };
 
   const mCreate = useMutation({
-    mutationFn: (input: Parameters<typeof createCompany>[0]["data"]) => createCompany({ data: input }),
+    mutationFn: (input: { nome: string; email: string; cnpj: string | null; telefone: string | null; adminNome: string; adminSenha: string }) => createCompany({ data: input }),
     onSuccess: () => { toast.success("Empresa criada"); setCreateOpen(false); invalidate(); },
     onError: (e: Error) => toast.error(e.message),
   });
 
   const mStatus = useMutation({
-    mutationFn: (input: Parameters<typeof setStatus>[0]["data"]) => setStatus({ data: input }),
+    mutationFn: (input: { companyId: string; status: "ativa" | "suspensa" | "bloqueada"; reason?: string | null }) => setStatus({ data: input }),
     onSuccess: () => { toast.success("Status atualizado"); invalidate(); },
     onError: (e: Error) => toast.error(e.message),
   });
