@@ -43,8 +43,8 @@ export function AppSidebar({ onNavigate }: { onNavigate?: () => void }) {
           <Snowflake className="h-5 w-5" />
         </div>
         <div className="flex flex-col">
-          <span className="font-semibold tracking-tight">PMOC Pro</span>
-          <span className="text-xs text-sidebar-foreground/60">Gestão digital</span>
+          <span className="font-semibold tracking-tight">ClimaOS</span>
+          <span className="text-xs text-sidebar-foreground/60">SO da Climatização</span>
         </div>
       </div>
 
