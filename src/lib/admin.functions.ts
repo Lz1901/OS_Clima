@@ -138,11 +138,12 @@ export const adminSetCompanyStatus = createServerFn({ method: "POST" })
   )
   .handler(async ({ context, data }) => {
     await assertSuperAdmin(context.userId);
-    const patch: Record<string, any> = { status: data.status };
-    if (data.status === "ativa") {
-      patch.suspended_at = null;
-      patch.block_reason = null;
-    } else {
+    const patch: { status: "ativa" | "suspensa" | "bloqueada"; suspended_at: string | null; block_reason: string | null } = {
+      status: data.status,
+      suspended_at: null,
+      block_reason: null,
+    };
+    if (data.status !== "ativa") {
       patch.suspended_at = new Date().toISOString();
       patch.block_reason = data.reason ?? null;
     }
