@@ -58,8 +58,8 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "PMOC Pro — Gestão Digital de Climatização" },
-      { name: "description", content: "Sistema SaaS para gestão de PMOC digital, equipamentos e manutenção em ar condicionado." },
+      { title: "ClimaOS — Sistema Operacional para Climatização" },
+      { name: "description", content: "ClimaOS: plataforma completa de gestão para empresas de refrigeração e ar-condicionado. PMOC digital, equipamentos, clientes e financeiro." },
     ],
     links: [
       { rel: "stylesheet", href: appCss },
