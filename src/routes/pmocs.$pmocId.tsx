@@ -199,8 +199,8 @@ function PmocWizard() {
         const blob = await (await fetch(sig.dataUrl)).blob();
         const path = `${profile!.company_id}/${pmocId}/${tipo}-${Date.now()}.png`;
         await supabase.storage.from("assinaturas").upload(path, blob, { contentType: "image/png", upsert: true });
-        const { data } = supabase.storage.from("assinaturas").getPublicUrl(path);
-        return data.publicUrl;
+        // Store path; PDF generator and viewers mint signed URLs on demand.
+        return path;
       };
       const tecnicoUrl = await uploadSig(tecnicoSig, "tecnico");
       const clienteUrl = await uploadSig(clienteSig, "cliente");
