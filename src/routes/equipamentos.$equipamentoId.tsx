@@ -9,6 +9,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { equipamentoTipoLabel, formatDate, statusLabel } from "@/lib/format";
 import { generateQrDataUrl, getEquipamentoValidationUrl } from "@/lib/qr";
+import { SignedLinkButton } from "@/components/signed-file";
 
 export const Route = createFileRoute("/equipamentos/$equipamentoId")({
   component: () => (
