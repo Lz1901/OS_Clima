@@ -232,6 +232,6 @@ export async function uploadPmocPdf(pmocId: string, companyId: string, blob: Blo
     upsert: true,
   });
   if (error) throw error;
-  const { data } = supabase.storage.from("pdfs").getPublicUrl(path);
-  return data.publicUrl;
+  // Return the storage path; consumers must mint a signed URL when displaying.
+  return path;
 }
