@@ -196,7 +196,8 @@ export async function generatePmocPdf(data: PmocPdfData): Promise<Blob> {
   let sigX = margin;
   let sigRowY = y;
   for (const sig of data.assinaturas) {
-    const img = await loadImage(sig.imagem_url);
+    const sigUrl = await resolveAssetUrl("assinaturas", sig.imagem_url);
+    const img = sigUrl ? await loadImage(sigUrl) : null;
     doc.setDrawColor(226, 232, 240);
     doc.roundedRect(sigX, sigRowY, sigW, 32, 2, 2, "S");
     if (img) {
