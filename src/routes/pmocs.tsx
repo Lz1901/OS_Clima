@@ -18,6 +18,7 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from "@/components/ui/dialog";
 import { formatDate, statusLabel } from "@/lib/format";
+import { SignedLinkButton } from "@/components/signed-file";
 import { logActivity } from "@/lib/logs";
 
 export const Route = createFileRoute("/pmocs")({
