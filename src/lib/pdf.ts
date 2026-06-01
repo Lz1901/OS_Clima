@@ -1,6 +1,14 @@
 import jsPDF from "jspdf";
 import { supabase } from "@/integrations/supabase/client";
 import { formatDateTime } from "./format";
+import { getSignedUrl } from "./storage";
+
+async function resolveAssetUrl(bucket: string, urlOrPath?: string | null): Promise<string | null> {
+  if (!urlOrPath) return null;
+  // Try to sign (works for paths and legacy public URLs); fall back to raw if signing fails
+  const signed = await getSignedUrl(bucket, urlOrPath, 3600);
+  return signed ?? urlOrPath;
+}
 
 type Company = {
   nome: string;
@@ -163,7 +171,8 @@ export async function generatePmocPdf(data: PmocPdfData): Promise<Blob> {
       doc.text(split, margin + 2, y + 4);
 
       if (r.foto_url) {
-        const itemFoto = await loadImage(r.foto_url);
+        const fotoUrl = await resolveAssetUrl("pmoc-fotos", r.foto_url);
+        const itemFoto = fotoUrl ? await loadImage(fotoUrl) : null;
         if (itemFoto) {
           try {
             // Add a small thumbnail next to the item
@@ -187,7 +196,8 @@ export async function generatePmocPdf(data: PmocPdfData): Promise<Blob> {
   let sigX = margin;
   let sigRowY = y;
   for (const sig of data.assinaturas) {
-    const img = await loadImage(sig.imagem_url);
+    const sigUrl = await resolveAssetUrl("assinaturas", sig.imagem_url);
+    const img = sigUrl ? await loadImage(sigUrl) : null;
     doc.setDrawColor(226, 232, 240);
     doc.roundedRect(sigX, sigRowY, sigW, 32, 2, 2, "S");
     if (img) {
@@ -222,6 +232,6 @@ export async function uploadPmocPdf(pmocId: string, companyId: string, blob: Blo
     upsert: true,
   });
   if (error) throw error;
-  const { data } = supabase.storage.from("pdfs").getPublicUrl(path);
-  return data.publicUrl;
+  // Return the storage path; consumers must mint a signed URL when displaying.
+  return path;
 }

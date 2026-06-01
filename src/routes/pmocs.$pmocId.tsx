@@ -20,6 +20,8 @@ import { SignaturePad, type SignatureResult } from "@/components/signature-pad";
 import { formatDateTime, statusLabel, equipamentoTipoLabel } from "@/lib/format";
 import { logActivity } from "@/lib/logs";
 import { generatePmocPdf, uploadPmocPdf } from "@/lib/pdf";
+import { getSignedUrl } from "@/lib/storage";
+import { SignedImage, SignedLinkButton } from "@/components/signed-file";
 import { calcNext as calcNextDate } from "./pmocs";
 
 export const Route = createFileRoute("/pmocs/$pmocId")({
@@ -133,8 +135,8 @@ function PmocWizard() {
     const path = `${profile!.company_id}/${pmocId}/${equipId}-${itemId}-${Date.now()}.${file.name.split(".").pop()}`;
     const { error } = await supabase.storage.from("pmoc-fotos").upload(path, file);
     if (error) { toast.error("Falha no upload"); return; }
-    const { data } = supabase.storage.from("pmoc-fotos").getPublicUrl(path);
-    setResposta(equipId, itemId, respostas[equipId]?.[itemId]?.valor ?? null, data.publicUrl);
+    // Store the storage path; signed URL is minted on demand for display/PDF.
+    setResposta(equipId, itemId, respostas[equipId]?.[itemId]?.valor ?? null, path);
     toast.success("Foto anexada");
   };
 
@@ -197,8 +199,8 @@ function PmocWizard() {
         const blob = await (await fetch(sig.dataUrl)).blob();
         const path = `${profile!.company_id}/${pmocId}/${tipo}-${Date.now()}.png`;
         await supabase.storage.from("assinaturas").upload(path, blob, { contentType: "image/png", upsert: true });
-        const { data } = supabase.storage.from("assinaturas").getPublicUrl(path);
-        return data.publicUrl;
+        // Store path; PDF generator and viewers mint signed URLs on demand.
+        return path;
       };
       const tecnicoUrl = await uploadSig(tecnicoSig, "tecnico");
       const clienteUrl = await uploadSig(clienteSig, "cliente");
@@ -455,9 +457,9 @@ function PmocWizard() {
                             onChange={(e) => { const f = e.target.files?.[0]; if (f) uploadFoto(eq.id, it.id, f); }} />
                         </label>
                         {r?.foto_url && (
-                          <a href={r.foto_url} target="_blank" rel="noreferrer">
-                            <img src={r.foto_url} className="h-10 w-10 object-cover rounded border" alt="" />
-                          </a>
+                          <SignedLinkButton bucket="pmoc-fotos" pathOrUrl={r.foto_url}>
+                            <SignedImage bucket="pmoc-fotos" pathOrUrl={r.foto_url} className="h-10 w-10 object-cover rounded border" />
+                          </SignedLinkButton>
                         )}
                       </div>
                     </div>
@@ -515,13 +517,14 @@ function FinalizedView({ pmoc, onBack }: { pmoc: any; onBack: () => void }) {
   const [to, setTo] = useState(pmoc.clientes?.email ?? "");
   const [extra, setExtra] = useState("");
 
-  const sendEmail = () => {
+  const sendEmail = async () => {
     if (!to) { toast.error("Informe o e-mail do destinatário"); return; }
     const cliente = pmoc.clientes?.razao_social ?? "";
     const subject = encodeURIComponent(`PMOC ${pmoc.numero ?? ""} — ${cliente}`);
+    const link = await getSignedUrl("pdfs", pmoc.pdf_url, 60 * 60 * 24 * 7); // 7-day link for email
     const body = encodeURIComponent(
       `Olá,\n\nSegue o relatório PMOC concluído em ${formatDateTime(pmoc.data_finalizacao)}.\n\n` +
-      `Link do relatório (PDF):\n${pmoc.pdf_url}\n\n` +
+      `Link do relatório (PDF):\n${link ?? "(link indisponível)"}\n\n` +
       (extra ? `${extra}\n\n` : "") +
       `Atenciosamente.`
     );
@@ -530,8 +533,10 @@ function FinalizedView({ pmoc, onBack }: { pmoc: any; onBack: () => void }) {
 
   const copyLink = async () => {
     if (!pmoc.pdf_url) return;
-    await navigator.clipboard.writeText(pmoc.pdf_url);
-    toast.success("Link copiado");
+    const url = await getSignedUrl("pdfs", pmoc.pdf_url, 60 * 60 * 24 * 7);
+    if (!url) { toast.error("Não foi possível gerar o link"); return; }
+    await navigator.clipboard.writeText(url);
+    toast.success("Link copiado (válido por 7 dias)");
   };
 
   return (
@@ -550,11 +555,9 @@ function FinalizedView({ pmoc, onBack }: { pmoc: any; onBack: () => void }) {
         </p>
         <div className="flex justify-center gap-2 mt-6 flex-wrap">
           {pmoc.pdf_url && (
-            <Button asChild>
-              <a href={pmoc.pdf_url} target="_blank" rel="noreferrer">
-                <FileText className="h-4 w-4 mr-2" /> Baixar PDF
-              </a>
-            </Button>
+            <SignedLinkButton bucket="pdfs" pathOrUrl={pmoc.pdf_url} className="inline-flex items-center gap-2 h-10 px-4 rounded-md bg-primary text-primary-foreground text-sm font-medium hover:opacity-90">
+              <FileText className="h-4 w-4" /> Baixar PDF
+            </SignedLinkButton>
           )}
           {pmoc.pdf_url && (
             <Button variant="outline" onClick={() => setEmailOpen(true)}>

@@ -9,6 +9,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { equipamentoTipoLabel, formatDate, statusLabel } from "@/lib/format";
 import { generateQrDataUrl, getEquipamentoValidationUrl } from "@/lib/qr";
+import { SignedLinkButton } from "@/components/signed-file";
 
 export const Route = createFileRoute("/equipamentos/$equipamentoId")({
   component: () => (
@@ -107,11 +108,13 @@ function EquipamentoDetail() {
                       </p>
                     </div>
                     {h.pmocs.pdf_url && (
-                      <Button variant="ghost" size="sm" asChild>
-                        <a href={h.pmocs.pdf_url} target="_blank" rel="noreferrer">
-                          <Download className="h-4 w-4" />
-                        </a>
-                      </Button>
+                      <SignedLinkButton
+                        bucket="pdfs"
+                        pathOrUrl={h.pmocs.pdf_url}
+                        className="inline-flex items-center justify-center h-8 w-8 rounded-md hover:bg-muted"
+                      >
+                        <Download className="h-4 w-4" />
+                      </SignedLinkButton>
                     )}
                   </div>
                 ))}
