@@ -517,13 +517,14 @@ function FinalizedView({ pmoc, onBack }: { pmoc: any; onBack: () => void }) {
   const [to, setTo] = useState(pmoc.clientes?.email ?? "");
   const [extra, setExtra] = useState("");
 
-  const sendEmail = () => {
+  const sendEmail = async () => {
     if (!to) { toast.error("Informe o e-mail do destinatário"); return; }
     const cliente = pmoc.clientes?.razao_social ?? "";
     const subject = encodeURIComponent(`PMOC ${pmoc.numero ?? ""} — ${cliente}`);
+    const link = await getSignedUrl("pdfs", pmoc.pdf_url, 60 * 60 * 24 * 7); // 7-day link for email
     const body = encodeURIComponent(
       `Olá,\n\nSegue o relatório PMOC concluído em ${formatDateTime(pmoc.data_finalizacao)}.\n\n` +
-      `Link do relatório (PDF):\n${pmoc.pdf_url}\n\n` +
+      `Link do relatório (PDF):\n${link ?? "(link indisponível)"}\n\n` +
       (extra ? `${extra}\n\n` : "") +
       `Atenciosamente.`
     );
@@ -532,8 +533,10 @@ function FinalizedView({ pmoc, onBack }: { pmoc: any; onBack: () => void }) {
 
   const copyLink = async () => {
     if (!pmoc.pdf_url) return;
-    await navigator.clipboard.writeText(pmoc.pdf_url);
-    toast.success("Link copiado");
+    const url = await getSignedUrl("pdfs", pmoc.pdf_url, 60 * 60 * 24 * 7);
+    if (!url) { toast.error("Não foi possível gerar o link"); return; }
+    await navigator.clipboard.writeText(url);
+    toast.success("Link copiado (válido por 7 dias)");
   };
 
   return (
@@ -552,11 +555,9 @@ function FinalizedView({ pmoc, onBack }: { pmoc: any; onBack: () => void }) {
         </p>
         <div className="flex justify-center gap-2 mt-6 flex-wrap">
           {pmoc.pdf_url && (
-            <Button asChild>
-              <a href={pmoc.pdf_url} target="_blank" rel="noreferrer">
-                <FileText className="h-4 w-4 mr-2" /> Baixar PDF
-              </a>
-            </Button>
+            <SignedLinkButton bucket="pdfs" pathOrUrl={pmoc.pdf_url} className="inline-flex items-center gap-2 h-10 px-4 rounded-md bg-primary text-primary-foreground text-sm font-medium hover:opacity-90">
+              <FileText className="h-4 w-4" /> Baixar PDF
+            </SignedLinkButton>
           )}
           {pmoc.pdf_url && (
             <Button variant="outline" onClick={() => setEmailOpen(true)}>
