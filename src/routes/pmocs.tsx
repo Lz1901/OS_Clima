@@ -127,11 +127,13 @@ function PmocsPage() {
                 </button>
                 <div className="flex gap-1 shrink-0">
                   {p.pdf_url && (
-                    <Button variant="ghost" size="icon" asChild>
-                      <a href={p.pdf_url} target="_blank" rel="noreferrer" title="Ver PDF">
-                        <FileText className="h-4 w-4" />
-                      </a>
-                    </Button>
+                    <SignedLinkButton
+                      bucket="pdfs"
+                      pathOrUrl={p.pdf_url}
+                      className="inline-flex items-center justify-center h-9 w-9 rounded-md hover:bg-muted"
+                    >
+                      <FileText className="h-4 w-4" />
+                    </SignedLinkButton>
                   )}
                   <Button variant="ghost" size="icon" asChild>
                     <Link to="/pmocs/$pmocId" params={{ pmocId: p.id }}>
