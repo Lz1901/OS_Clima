@@ -171,7 +171,8 @@ export async function generatePmocPdf(data: PmocPdfData): Promise<Blob> {
       doc.text(split, margin + 2, y + 4);
 
       if (r.foto_url) {
-        const itemFoto = await loadImage(r.foto_url);
+        const fotoUrl = await resolveAssetUrl("pmoc-fotos", r.foto_url);
+        const itemFoto = fotoUrl ? await loadImage(fotoUrl) : null;
         if (itemFoto) {
           try {
             // Add a small thumbnail next to the item
