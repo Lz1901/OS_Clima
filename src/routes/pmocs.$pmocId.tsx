@@ -135,8 +135,8 @@ function PmocWizard() {
     const path = `${profile!.company_id}/${pmocId}/${equipId}-${itemId}-${Date.now()}.${file.name.split(".").pop()}`;
     const { error } = await supabase.storage.from("pmoc-fotos").upload(path, file);
     if (error) { toast.error("Falha no upload"); return; }
-    const { data } = supabase.storage.from("pmoc-fotos").getPublicUrl(path);
-    setResposta(equipId, itemId, respostas[equipId]?.[itemId]?.valor ?? null, data.publicUrl);
+    // Store the storage path; signed URL is minted on demand for display/PDF.
+    setResposta(equipId, itemId, respostas[equipId]?.[itemId]?.valor ?? null, path);
     toast.success("Foto anexada");
   };
 
