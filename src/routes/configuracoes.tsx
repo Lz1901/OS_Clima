@@ -40,8 +40,21 @@ function Config() {
 
   const save = useMutation({
     mutationFn: async () => {
-      const { id, created_at, updated_at, ...rest } = form;
-      const { error } = await supabase.from("companies").update(rest).eq("id", profile!.company_id);
+      // Allowlist apenas campos editáveis pelo admin da empresa.
+      // status/suspended_at/block_reason são reservados ao Super Admin.
+      const safe = {
+        nome: form.nome ?? null,
+        cnpj: form.cnpj ?? null,
+        email: form.email ?? null,
+        telefone: form.telefone ?? null,
+        endereco: form.endereco ?? null,
+        crea: form.crea ?? null,
+        responsavel_tecnico: form.responsavel_tecnico ?? null,
+        cor_primaria: form.cor_primaria ?? null,
+        logo_url: form.logo_url ?? null,
+        assinatura_url: form.assinatura_url ?? null,
+      };
+      const { error } = await supabase.from("companies").update(safe).eq("id", profile!.company_id);
       if (error) throw error;
     },
     onSuccess: () => {

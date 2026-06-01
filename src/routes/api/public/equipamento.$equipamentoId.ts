@@ -41,12 +41,14 @@ export const Route = createFileRoute("/api/public/equipamento/$equipamentoId")({
             .maybeSingle(),
           supabaseAdmin
             .from("pmoc_equipamentos")
-            .select("pmocs(id, numero, status, data_finalizacao, data_inicio, pdf_url)")
+            .select("pmocs(id, numero, status, data_finalizacao, data_inicio)")
             .eq("equipamento_id", id)
             .order("created_at", { ascending: false })
             .limit(20),
         ]);
 
+        // Endpoint público (validação por QR code) — não expor pdf_url
+        // para não permitir descoberta de PDFs sensíveis sem autenticação.
         const historico = (history ?? [])
           .map((r: any) => r.pmocs)
           .filter(Boolean)
