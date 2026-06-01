@@ -457,9 +457,9 @@ function PmocWizard() {
                             onChange={(e) => { const f = e.target.files?.[0]; if (f) uploadFoto(eq.id, it.id, f); }} />
                         </label>
                         {r?.foto_url && (
-                          <a href={r.foto_url} target="_blank" rel="noreferrer">
-                            <img src={r.foto_url} className="h-10 w-10 object-cover rounded border" alt="" />
-                          </a>
+                          <SignedLinkButton bucket="pmoc-fotos" pathOrUrl={r.foto_url}>
+                            <SignedImage bucket="pmoc-fotos" pathOrUrl={r.foto_url} className="h-10 w-10 object-cover rounded border" />
+                          </SignedLinkButton>
                         )}
                       </div>
                     </div>
