@@ -1,6 +1,14 @@
 import jsPDF from "jspdf";
 import { supabase } from "@/integrations/supabase/client";
 import { formatDateTime } from "./format";
+import { getSignedUrl } from "./storage";
+
+async function resolveAssetUrl(bucket: string, urlOrPath?: string | null): Promise<string | null> {
+  if (!urlOrPath) return null;
+  // Try to sign (works for paths and legacy public URLs); fall back to raw if signing fails
+  const signed = await getSignedUrl(bucket, urlOrPath, 3600);
+  return signed ?? urlOrPath;
+}
 
 type Company = {
   nome: string;
