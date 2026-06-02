@@ -13,6 +13,7 @@ import {
   Activity,
   DollarSign,
   ShieldCheck,
+  UserCog,
 } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { cn } from "@/lib/utils";
@@ -28,6 +29,7 @@ const nav = [
   { to: "/checklists", label: "Checklists", icon: ListChecks, permission: "configuracoes.manage" },
   { to: "/logs", label: "Atividade", icon: Activity, permission: "configuracoes.manage" },
   { to: "/notificacoes", label: "Notificações", icon: Bell },
+  { to: "/funcionarios", label: "Funcionários", icon: UserCog, permission: "configuracoes.manage" },
   { to: "/configuracoes", label: "Configurações", icon: Settings, permission: "configuracoes.manage" },
   { to: "/admin", label: "Painel Super Admin", icon: ShieldCheck, superAdminOnly: true },
 ];
