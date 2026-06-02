@@ -14,6 +14,7 @@ import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as PmocsRouteImport } from './routes/pmocs'
 import { Route as NotificacoesRouteImport } from './routes/notificacoes'
 import { Route as LogsRouteImport } from './routes/logs'
+import { Route as FuncionariosRouteImport } from './routes/funcionarios'
 import { Route as FinanceiroRouteImport } from './routes/financeiro'
 import { Route as EquipamentosRouteImport } from './routes/equipamentos'
 import { Route as DashboardRouteImport } from './routes/dashboard'
@@ -51,6 +52,11 @@ const NotificacoesRoute = NotificacoesRouteImport.update({
 const LogsRoute = LogsRouteImport.update({
   id: '/logs',
   path: '/logs',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const FuncionariosRoute = FuncionariosRouteImport.update({
+  id: '/funcionarios',
+  path: '/funcionarios',
   getParentRoute: () => rootRouteImport,
 } as any)
 const FinanceiroRoute = FinanceiroRouteImport.update({
@@ -131,6 +137,7 @@ export interface FileRoutesByFullPath {
   '/dashboard': typeof DashboardRoute
   '/equipamentos': typeof EquipamentosRouteWithChildren
   '/financeiro': typeof FinanceiroRoute
+  '/funcionarios': typeof FuncionariosRoute
   '/logs': typeof LogsRoute
   '/notificacoes': typeof NotificacoesRoute
   '/pmocs': typeof PmocsRouteWithChildren
@@ -151,6 +158,7 @@ export interface FileRoutesByTo {
   '/dashboard': typeof DashboardRoute
   '/equipamentos': typeof EquipamentosRouteWithChildren
   '/financeiro': typeof FinanceiroRoute
+  '/funcionarios': typeof FuncionariosRoute
   '/logs': typeof LogsRoute
   '/notificacoes': typeof NotificacoesRoute
   '/pmocs': typeof PmocsRouteWithChildren
@@ -172,6 +180,7 @@ export interface FileRoutesById {
   '/dashboard': typeof DashboardRoute
   '/equipamentos': typeof EquipamentosRouteWithChildren
   '/financeiro': typeof FinanceiroRoute
+  '/funcionarios': typeof FuncionariosRoute
   '/logs': typeof LogsRoute
   '/notificacoes': typeof NotificacoesRoute
   '/pmocs': typeof PmocsRouteWithChildren
@@ -194,6 +203,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/equipamentos'
     | '/financeiro'
+    | '/funcionarios'
     | '/logs'
     | '/notificacoes'
     | '/pmocs'
@@ -214,6 +224,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/equipamentos'
     | '/financeiro'
+    | '/funcionarios'
     | '/logs'
     | '/notificacoes'
     | '/pmocs'
@@ -234,6 +245,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/equipamentos'
     | '/financeiro'
+    | '/funcionarios'
     | '/logs'
     | '/notificacoes'
     | '/pmocs'
@@ -255,6 +267,7 @@ export interface RootRouteChildren {
   DashboardRoute: typeof DashboardRoute
   EquipamentosRoute: typeof EquipamentosRouteWithChildren
   FinanceiroRoute: typeof FinanceiroRoute
+  FuncionariosRoute: typeof FuncionariosRoute
   LogsRoute: typeof LogsRoute
   NotificacoesRoute: typeof NotificacoesRoute
   PmocsRoute: typeof PmocsRouteWithChildren
@@ -299,6 +312,13 @@ declare module '@tanstack/react-router' {
       path: '/logs'
       fullPath: '/logs'
       preLoaderRoute: typeof LogsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/funcionarios': {
+      id: '/funcionarios'
+      path: '/funcionarios'
+      fullPath: '/funcionarios'
+      preLoaderRoute: typeof FuncionariosRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/financeiro': {
@@ -427,6 +447,7 @@ const rootRouteChildren: RootRouteChildren = {
   DashboardRoute: DashboardRoute,
   EquipamentosRoute: EquipamentosRouteWithChildren,
   FinanceiroRoute: FinanceiroRoute,
+  FuncionariosRoute: FuncionariosRoute,
   LogsRoute: LogsRoute,
   NotificacoesRoute: NotificacoesRoute,
   PmocsRoute: PmocsRouteWithChildren,
@@ -439,3 +460,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
