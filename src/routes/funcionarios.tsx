@@ -513,8 +513,8 @@ function PermissionMatrixTab() {
           </thead>
           <tbody>
             {Object.entries(grouped).map(([modulo, perms]) => (
-              <>
-                <tr key={`m-${modulo}`} className="bg-muted/20">
+              <Fragment key={`m-${modulo}`}>
+                <tr className="bg-muted/20">
                   <td colSpan={5} className="p-2 px-3 text-xs uppercase tracking-wide text-muted-foreground">
                     {modulo}
                   </td>
@@ -535,7 +535,7 @@ function PermissionMatrixTab() {
                     ))}
                   </tr>
                 ))}
-              </>
+              </Fragment>
             ))}
           </tbody>
         </table>
