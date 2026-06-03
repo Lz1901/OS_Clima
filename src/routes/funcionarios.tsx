@@ -92,6 +92,8 @@ function FuncionariosPage() {
     );
   }
 
+  const isSuperAdmin = !!profile?.is_super_admin;
+
   return (
     <>
       <PageHeader title="Funcionários & Permissões" />
@@ -100,16 +102,20 @@ function FuncionariosPage() {
           <TabsTrigger value="team">
             <UsersIcon className="h-4 w-4 mr-2" /> Equipe
           </TabsTrigger>
-          <TabsTrigger value="matrix">
-            <Shield className="h-4 w-4 mr-2" /> Matriz de permissões
-          </TabsTrigger>
+          {isSuperAdmin && (
+            <TabsTrigger value="matrix">
+              <Shield className="h-4 w-4 mr-2" /> Matriz de permissões
+            </TabsTrigger>
+          )}
         </TabsList>
         <TabsContent value="team" className="mt-4">
           <TeamTab />
         </TabsContent>
-        <TabsContent value="matrix" className="mt-4">
-          <PermissionMatrixTab />
-        </TabsContent>
+        {isSuperAdmin && (
+          <TabsContent value="matrix" className="mt-4">
+            <PermissionMatrixTab />
+          </TabsContent>
+        )}
       </Tabs>
     </>
   );

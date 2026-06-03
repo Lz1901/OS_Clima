@@ -183,16 +183,31 @@ export const updateRolePermissions = createServerFn({ method: "POST" })
     }).parse(input)
   )
   .handler(async ({ context, data }) => {
-    await assertCompanyAdmin(context);
-    const { supabase } = context;
-    await supabase.from("role_permissions").delete().eq("role", data.role);
+    // Global table: only super admins may modify role_permissions
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: profile, error: profileErr } = await supabaseAdmin
+      .from("profiles")
+      .select("is_super_admin")
+      .eq("id", context.userId)
+      .maybeSingle();
+    if (profileErr) throw new Error(profileErr.message);
+    if (!profile?.is_super_admin) {
+      throw new Error("Forbidden: apenas Super Admin pode alterar a matriz global de permissões");
+    }
+
+    const { error: delErr } = await supabaseAdmin
+      .from("role_permissions")
+      .delete()
+      .eq("role", data.role);
+    if (delErr) throw new Error(delErr.message);
+
     if (data.permissionIds.length > 0) {
       const rows = data.permissionIds.map((permission_id) => ({
         role: data.role,
         permission_id,
       }));
-      const { error } = await supabase.from("role_permissions").insert(rows);
+      const { error } = await supabaseAdmin.from("role_permissions").insert(rows);
       if (error) throw new Error(error.message);
     }
-    return { success: true };
+    return { success: true, role: data.role, count: data.permissionIds.length };
   });
