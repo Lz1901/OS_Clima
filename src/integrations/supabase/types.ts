@@ -569,6 +569,47 @@ export type Database = {
           },
         ]
       }
+      pending_invites: {
+        Row: {
+          company_id: string
+          created_at: string
+          email: string
+          expires_at: string
+          id: string
+          invited_by: string | null
+          role: Database["public"]["Enums"]["app_role"]
+          used_at: string | null
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          email: string
+          expires_at?: string
+          id?: string
+          invited_by?: string | null
+          role: Database["public"]["Enums"]["app_role"]
+          used_at?: string | null
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          email?: string
+          expires_at?: string
+          id?: string
+          invited_by?: string | null
+          role?: Database["public"]["Enums"]["app_role"]
+          used_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pending_invites_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       permissions: {
         Row: {
           descricao: string | null
@@ -999,22 +1040,14 @@ export type Database = {
         Returns: boolean
       }
       get_user_company_id: { Args: { _user_id: string }; Returns: string }
-      has_role:
-        | {
-            Args: {
-              _role: Database["public"]["Enums"]["app_role"]
-              _user_id: string
-            }
-            Returns: boolean
-          }
-        | {
-            Args: {
-              _company_id: string
-              _role: Database["public"]["Enums"]["app_role"]
-              _user_id: string
-            }
-            Returns: boolean
-          }
+      has_role: {
+        Args: {
+          _company_id: string
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
       is_company_active: { Args: { _user_id: string }; Returns: boolean }
       is_super_admin: { Args: { _user_id: string }; Returns: boolean }
     }
