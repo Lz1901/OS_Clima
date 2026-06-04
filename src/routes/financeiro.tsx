@@ -197,7 +197,7 @@ function FinanceiroPage() {
                   <Label>Tipo</Label>
                   <Select 
                     value={formData.tipo} 
-                    onValueChange={(v) => setFormData({...formData, tipo: v})}
+                    onValueChange={(v) => setFormData({...formData, tipo: v, categoria_id: ""})}
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Selecione o tipo" />
