@@ -82,14 +82,22 @@ export const inviteFuncionario = createServerFn({ method: "POST" })
     );
     if (found) throw new Error("Já existe um usuário com este e-mail");
 
-    // Envia convite por e-mail (Supabase Auth dispara o template de invite)
+    // Cria um pending invite server-side. O trigger handle_new_user usa
+    // essa tabela (não a metadata enviada pelo usuário) para vincular o
+    // novo usuário à empresa correta, evitando escalonamento cross-tenant.
+    const { error: pendingErr } = await supabaseAdmin
+      .from("pending_invites")
+      .insert({
+        email: data.email.toLowerCase(),
+        company_id: companyId,
+        role: data.role,
+        invited_by: context.userId,
+      });
+    if (pendingErr) throw new Error(pendingErr.message);
+
     const { data: invited, error: inviteErr } =
       await supabaseAdmin.auth.admin.inviteUserByEmail(data.email, {
-        data: {
-          nome: data.nome,
-          invited_company_id: companyId,
-          invited_role: data.role,
-        },
+        data: { nome: data.nome },
       });
     if (inviteErr || !invited.user) {
       throw new Error(inviteErr?.message ?? "Erro ao convidar funcionário");
