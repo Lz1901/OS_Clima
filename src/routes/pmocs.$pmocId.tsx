@@ -171,13 +171,19 @@ function PmocWizard() {
 
   const finalize = async () => {
     if (!tecnicoSig || !clienteSig) { toast.error("Ambas as assinaturas são obrigatórias"); return; }
+    if (!profile?.company_id) { toast.error("Perfil não carregado, recarregue a página"); return; }
     setSubmitting(true);
+    let stage = "preparando";
     try {
-      // Persist equipamentos + respostas (replace any drafts)
+      // 1) Persist equipamentos + respostas (replace any drafts)
+      stage = "salvando respostas";
       await supabase.from("pmoc_equipamentos").delete().eq("pmoc_id", pmocId);
       await supabase.from("pmoc_respostas").delete().eq("pmoc_id", pmocId);
       const eqRows = selectedEquips.map((e) => ({ pmoc_id: pmocId, equipamento_id: e.id }));
-      if (eqRows.length) await supabase.from("pmoc_equipamentos").insert(eqRows);
+      if (eqRows.length) {
+        const { error } = await supabase.from("pmoc_equipamentos").insert(eqRows);
+        if (error) throw error;
+      }
 
       const respRows: any[] = [];
       for (const equipId of selectedEquipIds) {
@@ -192,25 +198,32 @@ function PmocWizard() {
           });
         }
       }
-      if (respRows.length) await supabase.from("pmoc_respostas").insert(respRows);
+      if (respRows.length) {
+        const { error } = await supabase.from("pmoc_respostas").insert(respRows);
+        if (error) throw error;
+      }
 
-      // upload assinaturas
+      // 2) Upload assinaturas (tecnico + cliente)
+      stage = "salvando assinaturas";
       const uploadSig = async (sig: SignatureResult, tipo: string) => {
         const blob = await (await fetch(sig.dataUrl)).blob();
         const path = `${profile!.company_id}/${pmocId}/${tipo}-${Date.now()}.png`;
-        await supabase.storage.from("assinaturas").upload(path, blob, { contentType: "image/png", upsert: true });
-        // Store path; PDF generator and viewers mint signed URLs on demand.
+        const { error } = await supabase.storage.from("assinaturas").upload(path, blob, { contentType: "image/png", upsert: true });
+        if (error) throw new Error(`upload assinatura ${tipo}: ${error.message}`);
         return path;
       };
       const tecnicoUrl = await uploadSig(tecnicoSig, "tecnico");
       const clienteUrl = await uploadSig(clienteSig, "cliente");
-      await supabase.from("assinaturas").insert([
+      const { error: sigErr } = await supabase.from("assinaturas").insert([
         { pmoc_id: pmocId, tipo: "tecnico", nome: tecnicoSig.nome, imagem_url: tecnicoUrl, device: navigator.userAgent.slice(0, 200) },
         { pmoc_id: pmocId, tipo: "cliente", nome: clienteSig.nome, imagem_url: clienteUrl, device: navigator.userAgent.slice(0, 200) },
       ]);
+      if (sigErr) throw sigErr;
 
-      // gerar PDF
-      const { data: company } = await supabase.from("companies").select("*").eq("id", profile!.company_id).single();
+      // 3) Gerar PDF
+      stage = "gerando PDF";
+      const { data: company, error: companyErr } = await supabase.from("companies").select("*").eq("id", profile!.company_id).single();
+      if (companyErr) throw companyErr;
       const pdf = await generatePmocPdf({
         company: company as any,
         pmoc: { ...(pmoc as any), data_inicio: pmoc?.data_inicio ?? new Date().toISOString(), data_finalizacao: new Date().toISOString(), observacoes: obs },
@@ -232,73 +245,101 @@ function PmocWizard() {
           { tipo: "cliente", nome: clienteSig.nome, imagem_url: clienteUrl },
         ],
       });
+
+      // 4) Download local imediato (sempre, mesmo se upload falhar depois)
+      try {
+        const blobUrl = URL.createObjectURL(pdf);
+        const a = document.createElement("a");
+        a.href = blobUrl;
+        a.download = `PMOC-${(pmoc as any).numero ?? pmocId}.pdf`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        setTimeout(() => URL.revokeObjectURL(blobUrl), 60_000);
+      } catch (e) {
+        console.warn("Falha ao iniciar download local do PDF", e);
+      }
+
+      // 5) Upload do PDF
+      stage = "salvando PDF";
       const pdfUrl = await uploadPmocPdf(pmocId, profile!.company_id, pdf);
 
-      await supabase.from("pmocs").update({
+      // 6) Marcar PMOC como finalizado
+      stage = "atualizando PMOC";
+      const { error: updErr } = await supabase.from("pmocs").update({
         status: "finalizado",
         data_finalizacao: new Date().toISOString(),
         observacoes: obs,
         pdf_url: pdfUrl,
       }).eq("id", pmocId);
+      if (updErr) throw updErr;
 
-      // Atualizar status dos equipamentos conforme as respostas
-      for (const eqId of selectedEquipIds) {
-        const temErro = Object.values(respostas[eqId] ?? {}).some(r => r.valor === "false");
-        if (temErro) {
-          await supabase.from("equipamentos").update({ status: "manutencao" }).eq("id", eqId);
-        } else {
-          await supabase.from("equipamentos").update({ status: "ativo" }).eq("id", eqId);
-        }
-      }
-
-      // RECORRÊNCIA: cria automaticamente a próxima PMOC se houver periodicidade
-      const periodicidade = (pmoc as any).periodicidade as string | null;
-      if (periodicidade) {
-        const baseISO = new Date().toISOString().slice(0, 10);
-        const proxima = calcNextDate(baseISO, periodicidade);
-        const proximaDepois = calcNextDate(proxima, periodicidade);
-        const ano = new Date().getFullYear();
-        const novoNumero = `${ano}-${Math.floor(Math.random() * 9000 + 1000)}`;
-        const { data: novo } = await supabase.from("pmocs").insert({
-          company_id: profile!.company_id,
-          cliente_id: (pmoc as any).cliente_id,
-          unidade_id: (pmoc as any).unidade_id,
-          template_id: (pmoc as any).template_id,
-          tecnico_id: (pmoc as any).tecnico_id,
-          data_agendada: proxima,
-          periodicidade,
-          proxima_execucao: proximaDepois,
-          pmoc_origem_id: pmocId,
-          numero: novoNumero,
-          status: "pendente",
-        } as any).select().single();
-        if (novo) {
-          await supabase.from("notificacoes").insert({
-            company_id: profile!.company_id,
-            tipo: "pmoc_agendada",
-            titulo: `Próxima PMOC agendada`,
-            mensagem: `PMOC #${novoNumero} agendada para ${proxima}`,
-            link: `/pmocs/${novo.id}`,
-          });
-        }
-      }
-
-      await supabase.from("notificacoes").insert({
-        company_id: profile!.company_id,
-        tipo: "pmoc_finalizada",
-        titulo: `PMOC ${(pmoc as any).numero ?? ""} finalizada`,
-        mensagem: `Concluída em ${(pmoc as any).unidades?.nome}`,
-        link: `/pmocs/${pmocId}`,
-      });
-
-      await logActivity(profile!.company_id, "finalizou", "pmoc", pmocId, { equipamentos: selectedEquips.length });
-
+      toast.success("PMOC finalizada — PDF gerado e baixado!");
       qc.invalidateQueries({ queryKey: ["pmoc", pmocId] });
       qc.invalidateQueries({ queryKey: ["pmocs"] });
-      toast.success("PMOC finalizada com sucesso!");
       setStep(4);
+
+      // Pós-finalização (não-bloqueante): status equipamentos, recorrência, notificações, log
+      (async () => {
+        try {
+          for (const eqId of selectedEquipIds) {
+            const temErro = Object.values(respostas[eqId] ?? {}).some(r => r.valor === "false");
+            await supabase.from("equipamentos")
+              .update({ status: temErro ? "manutencao" : "ativo" })
+              .eq("id", eqId);
+          }
+        } catch (e) { console.warn("Falha ao atualizar status dos equipamentos", e); }
+
+        try {
+          const periodicidade = (pmoc as any).periodicidade as string | null;
+          if (periodicidade) {
+            const baseISO = new Date().toISOString().slice(0, 10);
+            const proxima = calcNextDate(baseISO, periodicidade);
+            const proximaDepois = calcNextDate(proxima, periodicidade);
+            const ano = new Date().getFullYear();
+            const novoNumero = `${ano}-${Math.floor(Math.random() * 9000 + 1000)}`;
+            const { data: novo } = await supabase.from("pmocs").insert({
+              company_id: profile!.company_id,
+              cliente_id: (pmoc as any).cliente_id,
+              unidade_id: (pmoc as any).unidade_id,
+              template_id: (pmoc as any).template_id,
+              tecnico_id: (pmoc as any).tecnico_id,
+              data_agendada: proxima,
+              periodicidade,
+              proxima_execucao: proximaDepois,
+              pmoc_origem_id: pmocId,
+              numero: novoNumero,
+              status: "pendente",
+            } as any).select().single();
+            if (novo) {
+              await supabase.from("notificacoes").insert({
+                company_id: profile!.company_id,
+                tipo: "pmoc_agendada",
+                titulo: `Próxima PMOC agendada`,
+                mensagem: `PMOC #${novoNumero} agendada para ${proxima}`,
+                link: `/pmocs/${novo.id}`,
+              });
+            }
+          }
+        } catch (e) { console.warn("Falha ao criar recorrência", e); }
+
+        try {
+          await supabase.from("notificacoes").insert({
+            company_id: profile!.company_id,
+            tipo: "pmoc_finalizada",
+            titulo: `PMOC ${(pmoc as any).numero ?? ""} finalizada`,
+            mensagem: `Concluída em ${(pmoc as any).unidades?.nome ?? ""}`,
+            link: `/pmocs/${pmocId}`,
+          });
+        } catch (e) { console.warn("Falha ao registrar notificação", e); }
+
+        try {
+          await logActivity(profile!.company_id, "finalizou", "pmoc", pmocId, { equipamentos: selectedEquips.length });
+        } catch (e) { console.warn("Falha ao registrar log", e); }
+      })();
     } catch (e: any) {
-      toast.error(e.message ?? "Erro ao finalizar");
+      console.error(`[PMOC finalize] falhou em "${stage}"`, e);
+      toast.error(`Erro em ${stage}: ${e?.message ?? "tente novamente"}`);
     } finally {
       setSubmitting(false);
     }
