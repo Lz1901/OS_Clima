@@ -4,7 +4,8 @@ import { Menu } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { AppSidebar } from "./app-sidebar";
 import { Button } from "./ui/button";
-import { Sheet, SheetContent, SheetTrigger } from "./ui/sheet";
+import { Sheet, SheetContent, SheetTrigger, SheetTitle, SheetDescription } from "./ui/sheet";
+import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
 
 export function AppLayout({ children }: { children: ReactNode }) {
   const { user, loading } = useAuth();
@@ -41,6 +42,10 @@ export function AppLayout({ children }: { children: ReactNode }) {
               </Button>
             </SheetTrigger>
             <SheetContent side="left" className="p-0 w-64">
+              <VisuallyHidden>
+                <SheetTitle>Menu de navegação</SheetTitle>
+                <SheetDescription>Links para as seções principais do ClimaOS</SheetDescription>
+              </VisuallyHidden>
               <AppSidebar onNavigate={() => setOpen(false)} />
             </SheetContent>
           </Sheet>

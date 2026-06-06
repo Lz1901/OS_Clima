@@ -180,7 +180,7 @@ function DashboardPage() {
       )}
 
       <div className="grid lg:grid-cols-3 gap-4 mb-6">
-        <Card className="p-5 lg:col-span-2">
+        <Card className="p-5 lg:col-span-2 min-w-0">
           <div className="flex items-center justify-between mb-4">
             <div>
               <h3 className="font-semibold">Manutenções mensais</h3>
@@ -188,16 +188,16 @@ function DashboardPage() {
             </div>
             <TrendingUp className="h-4 w-4 text-muted-foreground" />
           </div>
-          <div className="h-64">
-            <ResponsiveContainer width="100%" height="100%">
+          <div className="h-64 w-full min-w-0">
+            <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
               <BarChart data={chartData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.3} />
+                <CartesianGrid strokeDasharray="3 3" stroke="currentColor" opacity={0.15} />
                 <XAxis dataKey="mes" stroke="currentColor" fontSize={12} />
                 <YAxis stroke="currentColor" fontSize={12} allowDecimals={false} />
                 <Tooltip
                   contentStyle={{
-                    background: "hsl(var(--popover))",
-                    border: "1px solid hsl(var(--border))",
+                    background: "var(--popover, #fff)",
+                    border: "1px solid var(--border, #e5e7eb)",
                     borderRadius: 8,
                   }}
                 />
