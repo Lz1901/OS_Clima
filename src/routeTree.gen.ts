@@ -110,9 +110,9 @@ const ValidarEquipamentoIdRoute = ValidarEquipamentoIdRouteImport.update({
   getParentRoute: () => rootRouteImport,
 } as any)
 const PmocsPmocIdRoute = PmocsPmocIdRouteImport.update({
-  id: '/$pmocId',
-  path: '/$pmocId',
-  getParentRoute: () => PmocsRoute,
+  id: '/pmocs/$pmocId',
+  path: '/pmocs/$pmocId',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const EquipamentosEquipamentoIdRoute =
   EquipamentosEquipamentoIdRouteImport.update({
@@ -272,6 +272,7 @@ export interface RootRouteChildren {
   NotificacoesRoute: typeof NotificacoesRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
   UnidadesRoute: typeof UnidadesRoute
+  PmocsPmocIdRoute: typeof PmocsPmocIdRoute
   ValidarEquipamentoIdRoute: typeof ValidarEquipamentoIdRoute
   PmocsIndexRoute: typeof PmocsIndexRoute
   ApiPublicEquipamentoEquipamentoIdRoute: typeof ApiPublicEquipamentoEquipamentoIdRoute
@@ -393,10 +394,10 @@ declare module '@tanstack/react-router' {
     }
     '/pmocs/$pmocId': {
       id: '/pmocs/$pmocId'
-      path: '/$pmocId'
+      path: '/pmocs/$pmocId'
       fullPath: '/pmocs/$pmocId'
       preLoaderRoute: typeof PmocsPmocIdRouteImport
-      parentRoute: typeof PmocsRoute
+      parentRoute: typeof rootRouteImport
     }
     '/equipamentos/$equipamentoId': {
       id: '/equipamentos/$equipamentoId'
@@ -442,6 +443,7 @@ const rootRouteChildren: RootRouteChildren = {
   NotificacoesRoute: NotificacoesRoute,
   ResetPasswordRoute: ResetPasswordRoute,
   UnidadesRoute: UnidadesRoute,
+  PmocsPmocIdRoute: PmocsPmocIdRoute,
   ValidarEquipamentoIdRoute: ValidarEquipamentoIdRoute,
   PmocsIndexRoute: PmocsIndexRoute,
   ApiPublicEquipamentoEquipamentoIdRoute:
