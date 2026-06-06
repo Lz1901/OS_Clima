@@ -21,7 +21,7 @@ import { formatDate, statusLabel } from "@/lib/format";
 import { SignedLinkButton } from "@/components/signed-file";
 import { logActivity } from "@/lib/logs";
 
-export const Route = createFileRoute("/pmocs")({
+export const Route = createFileRoute("/pmocs/")({
   component: () => (
     <AppLayout>
       <PmocsPage />

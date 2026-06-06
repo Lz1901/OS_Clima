@@ -11,7 +11,6 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as UnidadesRouteImport } from './routes/unidades'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
-import { Route as PmocsRouteImport } from './routes/pmocs'
 import { Route as NotificacoesRouteImport } from './routes/notificacoes'
 import { Route as LogsRouteImport } from './routes/logs'
 import { Route as FuncionariosRouteImport } from './routes/funcionarios'
@@ -24,6 +23,7 @@ import { Route as ChecklistsRouteImport } from './routes/checklists'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as PmocsIndexRouteImport } from './routes/pmocs.index'
 import { Route as ValidarEquipamentoIdRouteImport } from './routes/validar.$equipamentoId'
 import { Route as PmocsPmocIdRouteImport } from './routes/pmocs.$pmocId'
 import { Route as EquipamentosEquipamentoIdRouteImport } from './routes/equipamentos.$equipamentoId'
@@ -37,11 +37,6 @@ const UnidadesRoute = UnidadesRouteImport.update({
 const ResetPasswordRoute = ResetPasswordRouteImport.update({
   id: '/reset-password',
   path: '/reset-password',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const PmocsRoute = PmocsRouteImport.update({
-  id: '/pmocs',
-  path: '/pmocs',
   getParentRoute: () => rootRouteImport,
 } as any)
 const NotificacoesRoute = NotificacoesRouteImport.update({
@@ -104,6 +99,11 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PmocsIndexRoute = PmocsIndexRouteImport.update({
+  id: '/pmocs/',
+  path: '/pmocs/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ValidarEquipamentoIdRoute = ValidarEquipamentoIdRouteImport.update({
   id: '/validar/$equipamentoId',
   path: '/validar/$equipamentoId',
@@ -140,12 +140,12 @@ export interface FileRoutesByFullPath {
   '/funcionarios': typeof FuncionariosRoute
   '/logs': typeof LogsRoute
   '/notificacoes': typeof NotificacoesRoute
-  '/pmocs': typeof PmocsRouteWithChildren
   '/reset-password': typeof ResetPasswordRoute
   '/unidades': typeof UnidadesRoute
   '/equipamentos/$equipamentoId': typeof EquipamentosEquipamentoIdRoute
   '/pmocs/$pmocId': typeof PmocsPmocIdRoute
   '/validar/$equipamentoId': typeof ValidarEquipamentoIdRoute
+  '/pmocs/': typeof PmocsIndexRoute
   '/api/public/equipamento/$equipamentoId': typeof ApiPublicEquipamentoEquipamentoIdRoute
 }
 export interface FileRoutesByTo {
@@ -161,12 +161,12 @@ export interface FileRoutesByTo {
   '/funcionarios': typeof FuncionariosRoute
   '/logs': typeof LogsRoute
   '/notificacoes': typeof NotificacoesRoute
-  '/pmocs': typeof PmocsRouteWithChildren
   '/reset-password': typeof ResetPasswordRoute
   '/unidades': typeof UnidadesRoute
   '/equipamentos/$equipamentoId': typeof EquipamentosEquipamentoIdRoute
   '/pmocs/$pmocId': typeof PmocsPmocIdRoute
   '/validar/$equipamentoId': typeof ValidarEquipamentoIdRoute
+  '/pmocs': typeof PmocsIndexRoute
   '/api/public/equipamento/$equipamentoId': typeof ApiPublicEquipamentoEquipamentoIdRoute
 }
 export interface FileRoutesById {
@@ -183,12 +183,12 @@ export interface FileRoutesById {
   '/funcionarios': typeof FuncionariosRoute
   '/logs': typeof LogsRoute
   '/notificacoes': typeof NotificacoesRoute
-  '/pmocs': typeof PmocsRouteWithChildren
   '/reset-password': typeof ResetPasswordRoute
   '/unidades': typeof UnidadesRoute
   '/equipamentos/$equipamentoId': typeof EquipamentosEquipamentoIdRoute
   '/pmocs/$pmocId': typeof PmocsPmocIdRoute
   '/validar/$equipamentoId': typeof ValidarEquipamentoIdRoute
+  '/pmocs/': typeof PmocsIndexRoute
   '/api/public/equipamento/$equipamentoId': typeof ApiPublicEquipamentoEquipamentoIdRoute
 }
 export interface FileRouteTypes {
@@ -206,12 +206,12 @@ export interface FileRouteTypes {
     | '/funcionarios'
     | '/logs'
     | '/notificacoes'
-    | '/pmocs'
     | '/reset-password'
     | '/unidades'
     | '/equipamentos/$equipamentoId'
     | '/pmocs/$pmocId'
     | '/validar/$equipamentoId'
+    | '/pmocs/'
     | '/api/public/equipamento/$equipamentoId'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -227,12 +227,12 @@ export interface FileRouteTypes {
     | '/funcionarios'
     | '/logs'
     | '/notificacoes'
-    | '/pmocs'
     | '/reset-password'
     | '/unidades'
     | '/equipamentos/$equipamentoId'
     | '/pmocs/$pmocId'
     | '/validar/$equipamentoId'
+    | '/pmocs'
     | '/api/public/equipamento/$equipamentoId'
   id:
     | '__root__'
@@ -248,12 +248,12 @@ export interface FileRouteTypes {
     | '/funcionarios'
     | '/logs'
     | '/notificacoes'
-    | '/pmocs'
     | '/reset-password'
     | '/unidades'
     | '/equipamentos/$equipamentoId'
     | '/pmocs/$pmocId'
     | '/validar/$equipamentoId'
+    | '/pmocs/'
     | '/api/public/equipamento/$equipamentoId'
   fileRoutesById: FileRoutesById
 }
@@ -270,10 +270,10 @@ export interface RootRouteChildren {
   FuncionariosRoute: typeof FuncionariosRoute
   LogsRoute: typeof LogsRoute
   NotificacoesRoute: typeof NotificacoesRoute
-  PmocsRoute: typeof PmocsRouteWithChildren
   ResetPasswordRoute: typeof ResetPasswordRoute
   UnidadesRoute: typeof UnidadesRoute
   ValidarEquipamentoIdRoute: typeof ValidarEquipamentoIdRoute
+  PmocsIndexRoute: typeof PmocsIndexRoute
   ApiPublicEquipamentoEquipamentoIdRoute: typeof ApiPublicEquipamentoEquipamentoIdRoute
 }
 
@@ -291,13 +291,6 @@ declare module '@tanstack/react-router' {
       path: '/reset-password'
       fullPath: '/reset-password'
       preLoaderRoute: typeof ResetPasswordRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/pmocs': {
-      id: '/pmocs'
-      path: '/pmocs'
-      fullPath: '/pmocs'
-      preLoaderRoute: typeof PmocsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/notificacoes': {
@@ -384,6 +377,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/pmocs/': {
+      id: '/pmocs/'
+      path: '/pmocs'
+      fullPath: '/pmocs/'
+      preLoaderRoute: typeof PmocsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/validar/$equipamentoId': {
       id: '/validar/$equipamentoId'
       path: '/validar/$equipamentoId'
@@ -427,16 +427,6 @@ const EquipamentosRouteWithChildren = EquipamentosRoute._addFileChildren(
   EquipamentosRouteChildren,
 )
 
-interface PmocsRouteChildren {
-  PmocsPmocIdRoute: typeof PmocsPmocIdRoute
-}
-
-const PmocsRouteChildren: PmocsRouteChildren = {
-  PmocsPmocIdRoute: PmocsPmocIdRoute,
-}
-
-const PmocsRouteWithChildren = PmocsRoute._addFileChildren(PmocsRouteChildren)
-
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AdminRoute: AdminRoute,
@@ -450,10 +440,10 @@ const rootRouteChildren: RootRouteChildren = {
   FuncionariosRoute: FuncionariosRoute,
   LogsRoute: LogsRoute,
   NotificacoesRoute: NotificacoesRoute,
-  PmocsRoute: PmocsRouteWithChildren,
   ResetPasswordRoute: ResetPasswordRoute,
   UnidadesRoute: UnidadesRoute,
   ValidarEquipamentoIdRoute: ValidarEquipamentoIdRoute,
+  PmocsIndexRoute: PmocsIndexRoute,
   ApiPublicEquipamentoEquipamentoIdRoute:
     ApiPublicEquipamentoEquipamentoIdRoute,
 }
