@@ -22,7 +22,7 @@ import { logActivity } from "@/lib/logs";
 import { generatePmocPdf, uploadPmocPdf } from "@/lib/pdf";
 import { getSignedUrl } from "@/lib/storage";
 import { SignedImage, SignedLinkButton } from "@/components/signed-file";
-import { calcNext as calcNextDate } from "./pmocs";
+import { calcNext as calcNextDate } from "@/lib/pmoc";
 
 export const Route = createFileRoute("/pmocs/$pmocId")({
   component: () => (
