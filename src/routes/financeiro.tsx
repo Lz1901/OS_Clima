@@ -422,7 +422,10 @@ function FinanceiroPage() {
                                 Marcar como Pendente
                               </DropdownMenuItem>
                             )}
-                            <DropdownMenuItem className="text-red-600">
+                            <DropdownMenuItem
+                              className="text-red-600 focus:text-red-600"
+                              onSelect={(e) => { e.preventDefault(); setPendingDelete(t); }}
+                            >
                               Excluir
                             </DropdownMenuItem>
                           </DropdownMenuContent>
@@ -435,6 +438,34 @@ function FinanceiroPage() {
             </Table>
           </CardContent>
         </Card>
+
+        <AlertDialog open={!!pendingDelete} onOpenChange={(o) => !o && !deleting && setPendingDelete(null)}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Excluir transação?</AlertDialogTitle>
+              <AlertDialogDescription>
+                {pendingDelete && (
+                  <>
+                    Tem certeza que deseja excluir <strong>{pendingDelete.descricao}</strong>
+                    {pendingDelete.valor && (
+                      <> no valor de <strong>{formatCurrency(pendingDelete.valor)}</strong></>
+                    )}? Esta ação não pode ser desfeita.
+                  </>
+                )}
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel disabled={deleting}>Cancelar</AlertDialogCancel>
+              <AlertDialogAction
+                disabled={deleting}
+                onClick={(e) => { e.preventDefault(); if (pendingDelete) handleDelete(pendingDelete.id); }}
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              >
+                {deleting ? "Excluindo..." : "Excluir"}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </AppLayout>
   );
