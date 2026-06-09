@@ -454,6 +454,57 @@ function PmocWizard() {
 
       {step === 1 && (
         <div className="space-y-4">
+          <Card className="p-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sticky top-0 z-10 bg-card/95 backdrop-blur">
+            <p className="text-sm text-muted-foreground">
+              Aplicar a TODOS os itens de TODOS os equipamentos selecionados:
+            </p>
+            <div className="flex gap-2">
+              <Button
+                size="sm"
+                variant="default"
+                onClick={() => {
+                  const next: Record<string, Record<string, Resposta>> = { ...respostas };
+                  for (const eq of selectedEquips) {
+                    next[eq.id] = { ...(next[eq.id] ?? {}) };
+                    for (const it of items as any[]) {
+                      if (it.tipo_campo === "checkbox") {
+                        next[eq.id][it.id] = {
+                          valor: "true",
+                          foto_url: next[eq.id][it.id]?.foto_url ?? null,
+                        };
+                      }
+                    }
+                  }
+                  setRespostas(next);
+                  toast.success("Todos os itens marcados como OK");
+                }}
+              >
+                <CheckCircle2 className="h-4 w-4 mr-1" /> Marcar todos como OK
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => {
+                  const next: Record<string, Record<string, Resposta>> = { ...respostas };
+                  for (const eq of selectedEquips) {
+                    next[eq.id] = { ...(next[eq.id] ?? {}) };
+                    for (const it of items as any[]) {
+                      if (it.tipo_campo === "checkbox") {
+                        next[eq.id][it.id] = {
+                          valor: null,
+                          foto_url: next[eq.id][it.id]?.foto_url ?? null,
+                        };
+                      }
+                    }
+                  }
+                  setRespostas(next);
+                  toast.info("Itens desmarcados");
+                }}
+              >
+                Desmarcar todos
+              </Button>
+            </div>
+          </Card>
           {selectedEquips.map((eq) => (
             <Card key={eq.id} className="p-4">
               <div className="flex items-center gap-2 mb-3 pb-3 border-b">
