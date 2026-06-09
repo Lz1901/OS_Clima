@@ -25,7 +25,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { formatDateTime, statusLabel, formatCurrency } from "@/lib/format";
-import { seedDemoData } from "@/lib/seed";
+
 import { useAuth } from "@/hooks/use-auth";
 import { toast } from "sonner";
 
@@ -151,17 +151,6 @@ function DashboardPage() {
       <PageHeader
         title="Dashboard"
         description="Visão geral das operações de PMOC"
-        action={
-          (stats?.totalPmocs ?? 0) === 0 && (
-            <Button variant="outline" size="sm" onClick={async () => {
-              await seedDemoData(profile!.company_id, profile!.id);
-              qc.invalidateQueries();
-              toast.success("Dados de demonstração gerados!");
-            }}>
-              Gerar dados demo
-            </Button>
-          )
-        }
       />
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
