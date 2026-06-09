@@ -175,6 +175,26 @@ function FinanceiroPage() {
     }
   };
 
+  const handleDelete = async (id: string) => {
+    setDeleting(true);
+    try {
+      const { error } = await supabase
+        .from("financial_transactions")
+        .delete()
+        .eq("id", id);
+      if (error) throw error;
+      // Atualiza UI imediatamente; refetch garante consistência
+      setTransactions((prev) => prev.filter((t) => t.id !== id));
+      toast.success("Transação excluída");
+      fetchData();
+    } catch (error: any) {
+      toast.error(error.message ?? "Falha ao excluir transação");
+    } finally {
+      setDeleting(false);
+      setPendingDelete(null);
+    }
+  };
+
   const filteredTransactions = transactions.filter(t => 
     t.descricao.toLowerCase().includes(searchTerm.toLowerCase()) ||
     t.financial_categories?.nome.toLowerCase().includes(searchTerm.toLowerCase())
