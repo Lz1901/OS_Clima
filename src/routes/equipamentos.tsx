@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Plus, Pencil, Trash2, Wrench, Search, QrCode } from "lucide-react";
+import { Plus, Pencil, Trash2, Wrench, Search, QrCode, ChevronDown, ChevronRight, Building2, MapPin } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
@@ -18,6 +18,10 @@ import {
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { equipamentoTipoLabel, statusLabel } from "@/lib/format";
 
 export const Route = createFileRoute("/equipamentos")({
@@ -34,13 +38,17 @@ function EquipamentosPage() {
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<any>(null);
   const [search, setSearch] = useState("");
+  const [clienteFilter, setClienteFilter] = useState<string>("all");
+  const [unidadeFilter, setUnidadeFilter] = useState<string>("all");
+  const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
+  const [pendingDelete, setPendingDelete] = useState<any>(null);
 
   const { data: equipamentos = [] } = useQuery({
     queryKey: ["equipamentos"],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("equipamentos")
-        .select("*, unidades(nome, clientes(razao_social))")
+        .select("*, unidades(id, nome, cliente_id, clientes(id, razao_social))")
         .order("created_at", { ascending: false });
       if (error) throw error;
       return data ?? [];
@@ -52,7 +60,7 @@ function EquipamentosPage() {
     queryFn: async () => {
       const { data } = await supabase
         .from("unidades")
-        .select("id, nome, cliente_id, clientes(razao_social)")
+        .select("id, nome, cliente_id, clientes(id, razao_social)")
         .order("nome");
       return data ?? [];
     },
@@ -82,19 +90,78 @@ function EquipamentosPage() {
       const { error } = await supabase.from("equipamentos").delete().eq("id", id);
       if (error) throw error;
     },
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["equipamentos"] }); toast.success("Removido"); },
-    onError: (e: any) => toast.error(e.message),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["equipamentos"] });
+      toast.success("Equipamento removido");
+      setPendingDelete(null);
+    },
+    onError: (e: any) => {
+      toast.error(e.message ?? "Falha ao remover");
+      setPendingDelete(null);
+    },
   });
 
-  const filtered = (equipamentos as any[]).filter((eq) =>
-    [eq.marca, eq.modelo, eq.numero_serie, eq.patrimonio, eq.unidades?.nome].join(" ").toLowerCase().includes(search.toLowerCase())
-  );
+  // Clientes únicos (vindos das unidades, garante consistência)
+  const clientes = useMemo(() => {
+    const map = new Map<string, { id: string; razao_social: string }>();
+    for (const u of unidades as any[]) {
+      if (u.clientes) map.set(u.clientes.id, u.clientes);
+    }
+    return Array.from(map.values()).sort((a, b) => a.razao_social.localeCompare(b.razao_social));
+  }, [unidades]);
+
+  const unidadesFiltradas = useMemo(() => {
+    if (clienteFilter === "all") return unidades as any[];
+    return (unidades as any[]).filter((u) => u.cliente_id === clienteFilter);
+  }, [unidades, clienteFilter]);
+
+  // Aplica filtros
+  const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    return (equipamentos as any[]).filter((eq) => {
+      if (clienteFilter !== "all" && eq.unidades?.cliente_id !== clienteFilter) return false;
+      if (unidadeFilter !== "all" && eq.unidade_id !== unidadeFilter) return false;
+      if (!q) return true;
+      return [
+        eq.marca, eq.modelo, eq.numero_serie, eq.patrimonio,
+        eq.localizacao, equipamentoTipoLabel[eq.tipo],
+      ].filter(Boolean).join(" ").toLowerCase().includes(q);
+    });
+  }, [equipamentos, search, clienteFilter, unidadeFilter]);
+
+  // Agrupa: Cliente -> Unidade -> Equipamentos[]
+  const grouped = useMemo(() => {
+    const tree = new Map<
+      string,
+      { cliente: { id: string; razao_social: string }; unidades: Map<string, { unidade: any; equipamentos: any[] }> }
+    >();
+    for (const eq of filtered) {
+      const cli = eq.unidades?.clientes ?? { id: "_sem_cliente", razao_social: "(Sem cliente)" };
+      const uni = eq.unidades ?? { id: "_sem_unidade", nome: "(Sem unidade)" };
+      if (!tree.has(cli.id)) tree.set(cli.id, { cliente: cli, unidades: new Map() });
+      const node = tree.get(cli.id)!;
+      if (!node.unidades.has(uni.id)) node.unidades.set(uni.id, { unidade: uni, equipamentos: [] });
+      node.unidades.get(uni.id)!.equipamentos.push(eq);
+    }
+    return Array.from(tree.values())
+      .map((c) => ({
+        ...c,
+        unidades: Array.from(c.unidades.values()).sort((a, b) => a.unidade.nome.localeCompare(b.unidade.nome)),
+      }))
+      .sort((a, b) => a.cliente.razao_social.localeCompare(b.cliente.razao_social));
+  }, [filtered]);
+
+  const toggle = (id: string) => {
+    const next = new Set(collapsed);
+    if (next.has(id)) next.delete(id); else next.add(id);
+    setCollapsed(next);
+  };
 
   return (
     <>
       <PageHeader
         title="Equipamentos"
-        description={`${equipamentos.length} equipamento(s) cadastrado(s)`}
+        description={`${equipamentos.length} equipamento(s) · ${filtered.length} exibido(s)`}
         action={
           <Button onClick={() => { setEditing(null); setOpen(true); }} disabled={!unidades.length}>
             <Plus className="h-4 w-4 mr-2" /> Novo equipamento
@@ -108,52 +175,117 @@ function EquipamentosPage() {
         </Card>
       )}
 
-      <Card className="p-4 mb-4">
+      <Card className="p-4 mb-4 grid gap-3 md:grid-cols-[1fr_1fr_2fr]">
+        <Select value={clienteFilter} onValueChange={(v) => { setClienteFilter(v); setUnidadeFilter("all"); }}>
+          <SelectTrigger><SelectValue placeholder="Cliente" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Todos os clientes</SelectItem>
+            {clientes.map((c) => (
+              <SelectItem key={c.id} value={c.id}>{c.razao_social}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Select value={unidadeFilter} onValueChange={setUnidadeFilter}>
+          <SelectTrigger><SelectValue placeholder="Unidade" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Todas as unidades</SelectItem>
+            {unidadesFiltradas.map((u: any) => (
+              <SelectItem key={u.id} value={u.id}>{u.nome}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input placeholder="Buscar..." className="pl-9" value={search} onChange={(e) => setSearch(e.target.value)} />
+          <Input placeholder="Buscar por marca, modelo, série, patrimônio..." className="pl-9" value={search} onChange={(e) => setSearch(e.target.value)} />
         </div>
       </Card>
 
-      <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
-        {filtered.map((eq: any) => (
-          <Card key={eq.id} className="p-4 hover:border-primary/40 transition-colors">
-            <div className="flex items-start justify-between mb-3">
-              <div className="h-10 w-10 rounded-lg bg-primary/10 text-primary flex items-center justify-center">
-                <Wrench className="h-5 w-5" />
-              </div>
-              <Badge variant={eq.status === "ativo" ? "default" : "secondary"}>
-                {statusLabel[eq.status]}
-              </Badge>
-            </div>
-            <p className="font-semibold truncate">{eq.marca} {eq.modelo}</p>
-            <p className="text-xs text-muted-foreground">{equipamentoTipoLabel[eq.tipo]} · {eq.btus ? `${eq.btus} BTUs` : "—"}</p>
-            <div className="mt-3 pt-3 border-t text-xs text-muted-foreground space-y-1">
-              <p className="truncate">📍 {eq.unidades?.nome} — {eq.unidades?.clientes?.razao_social}</p>
-              {eq.numero_serie && <p>Série: {eq.numero_serie}</p>}
-              {eq.localizacao && <p>Local: {eq.localizacao}</p>}
-            </div>
-            <div className="flex gap-1 mt-3">
-              <Button variant="ghost" size="sm" className="flex-1" asChild>
-                <Link to="/equipamentos/$equipamentoId" params={{ equipamentoId: eq.id }}>
-                  <QrCode className="h-3 w-3 mr-1" /> Ver / QR
-                </Link>
-              </Button>
-              <Button variant="ghost" size="sm" onClick={() => { setEditing(eq); setOpen(true); }}>
-                <Pencil className="h-3 w-3" />
-              </Button>
-              <Button variant="ghost" size="sm" onClick={() => confirm("Remover?") && remove.mutate(eq.id)}>
-                <Trash2 className="h-3 w-3" />
-              </Button>
-            </div>
-          </Card>
-        ))}
-        {filtered.length === 0 && (
-          <div className="col-span-full p-8 text-center text-sm text-muted-foreground">
-            Nenhum equipamento.
-          </div>
-        )}
-      </div>
+      {grouped.length === 0 ? (
+        <Card className="p-8 text-center text-sm text-muted-foreground">
+          Nenhum equipamento encontrado.
+        </Card>
+      ) : (
+        <div className="space-y-4">
+          {grouped.map((c) => {
+            const totalEqs = c.unidades.reduce((acc, u) => acc + u.equipamentos.length, 0);
+            const cliCollapsed = collapsed.has(`c:${c.cliente.id}`);
+            return (
+              <Card key={c.cliente.id} className="overflow-hidden">
+                <button
+                  type="button"
+                  onClick={() => toggle(`c:${c.cliente.id}`)}
+                  className="w-full flex items-center gap-2 px-4 py-3 bg-muted/40 hover:bg-muted/60 transition-colors text-left"
+                >
+                  {cliCollapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                  <Building2 className="h-4 w-4 text-primary" />
+                  <span className="font-semibold flex-1 truncate">{c.cliente.razao_social}</span>
+                  <Badge variant="secondary">{totalEqs} equip.</Badge>
+                </button>
+                {!cliCollapsed && (
+                  <div className="divide-y">
+                    {c.unidades.map((u) => {
+                      const uniCollapsed = collapsed.has(`u:${u.unidade.id}`);
+                      return (
+                        <div key={u.unidade.id}>
+                          <button
+                            type="button"
+                            onClick={() => toggle(`u:${u.unidade.id}`)}
+                            className="w-full flex items-center gap-2 px-6 py-2 bg-muted/10 hover:bg-muted/30 transition-colors text-left"
+                          >
+                            {uniCollapsed ? <ChevronRight className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
+                            <MapPin className="h-3 w-3 text-muted-foreground" />
+                            <span className="text-sm font-medium flex-1 truncate">{u.unidade.nome}</span>
+                            <Badge variant="outline" className="text-xs">{u.equipamentos.length}</Badge>
+                          </button>
+                          {!uniCollapsed && (
+                            <div className="p-3 grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                              {u.equipamentos.map((eq: any) => (
+                                <Card key={eq.id} className="p-3 hover:border-primary/40 transition-colors">
+                                  <div className="flex items-start justify-between mb-2">
+                                    <div className="h-9 w-9 rounded-lg bg-primary/10 text-primary flex items-center justify-center">
+                                      <Wrench className="h-4 w-4" />
+                                    </div>
+                                    <Badge variant={eq.status === "ativo" ? "default" : "secondary"} className="text-xs">
+                                      {statusLabel[eq.status]}
+                                    </Badge>
+                                  </div>
+                                  <p className="font-semibold text-sm truncate">{eq.marca} {eq.modelo}</p>
+                                  <p className="text-xs text-muted-foreground">
+                                    {equipamentoTipoLabel[eq.tipo]} · {eq.btus ? `${eq.btus} BTUs` : "—"}
+                                  </p>
+                                  {(eq.numero_serie || eq.localizacao) && (
+                                    <div className="mt-2 pt-2 border-t text-xs text-muted-foreground space-y-0.5">
+                                      {eq.numero_serie && <p>Série: {eq.numero_serie}</p>}
+                                      {eq.localizacao && <p>Local: {eq.localizacao}</p>}
+                                    </div>
+                                  )}
+                                  <div className="flex gap-1 mt-2">
+                                    <Button variant="ghost" size="sm" className="flex-1" asChild>
+                                      <Link to="/equipamentos/$equipamentoId" params={{ equipamentoId: eq.id }}>
+                                        <QrCode className="h-3 w-3 mr-1" /> Ver / QR
+                                      </Link>
+                                    </Button>
+                                    <Button variant="ghost" size="sm" onClick={() => { setEditing(eq); setOpen(true); }}>
+                                      <Pencil className="h-3 w-3" />
+                                    </Button>
+                                    <Button variant="ghost" size="sm" onClick={() => setPendingDelete(eq)}>
+                                      <Trash2 className="h-3 w-3" />
+                                    </Button>
+                                  </div>
+                                </Card>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </Card>
+            );
+          })}
+        </div>
+      )}
 
       <EquipamentoDialog
         open={open}
@@ -163,6 +295,28 @@ function EquipamentosPage() {
         onSave={(form: any) => save.mutate(form)}
         saving={save.isPending}
       />
+
+      <AlertDialog open={!!pendingDelete} onOpenChange={(o) => !o && setPendingDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remover equipamento?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {pendingDelete && (
+                <>Tem certeza que deseja excluir <strong>{pendingDelete.marca} {pendingDelete.modelo}</strong>? Esta ação não pode ser desfeita.</>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => pendingDelete && remove.mutate(pendingDelete.id)}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Excluir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }
