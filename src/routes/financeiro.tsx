@@ -26,6 +26,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -65,6 +69,8 @@ function FinanceiroPage() {
   const [stats, setStats] = useState({ receita: 0, despesa: 0, saldo: 0 });
   const [searchTerm, setSearchTerm] = useState("");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [pendingDelete, setPendingDelete] = useState<any>(null);
+  const [deleting, setDeleting] = useState(false);
 
   // Form State
   const [formData, setFormData] = useState({
@@ -166,6 +172,26 @@ function FinanceiroPage() {
       fetchData();
     } catch (error: any) {
       toast.error(error.message);
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    setDeleting(true);
+    try {
+      const { error } = await supabase
+        .from("financial_transactions")
+        .delete()
+        .eq("id", id);
+      if (error) throw error;
+      // Atualiza UI imediatamente; refetch garante consistência
+      setTransactions((prev) => prev.filter((t) => t.id !== id));
+      toast.success("Transação excluída");
+      fetchData();
+    } catch (error: any) {
+      toast.error(error.message ?? "Falha ao excluir transação");
+    } finally {
+      setDeleting(false);
+      setPendingDelete(null);
     }
   };
 
@@ -396,7 +422,10 @@ function FinanceiroPage() {
                                 Marcar como Pendente
                               </DropdownMenuItem>
                             )}
-                            <DropdownMenuItem className="text-red-600">
+                            <DropdownMenuItem
+                              className="text-red-600 focus:text-red-600"
+                              onSelect={(e) => { e.preventDefault(); setPendingDelete(t); }}
+                            >
                               Excluir
                             </DropdownMenuItem>
                           </DropdownMenuContent>
@@ -409,6 +438,34 @@ function FinanceiroPage() {
             </Table>
           </CardContent>
         </Card>
+
+        <AlertDialog open={!!pendingDelete} onOpenChange={(o) => !o && !deleting && setPendingDelete(null)}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Excluir transação?</AlertDialogTitle>
+              <AlertDialogDescription>
+                {pendingDelete && (
+                  <>
+                    Tem certeza que deseja excluir <strong>{pendingDelete.descricao}</strong>
+                    {pendingDelete.valor && (
+                      <> no valor de <strong>{formatCurrency(pendingDelete.valor)}</strong></>
+                    )}? Esta ação não pode ser desfeita.
+                  </>
+                )}
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel disabled={deleting}>Cancelar</AlertDialogCancel>
+              <AlertDialogAction
+                disabled={deleting}
+                onClick={(e) => { e.preventDefault(); if (pendingDelete) handleDelete(pendingDelete.id); }}
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              >
+                {deleting ? "Excluindo..." : "Excluir"}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </AppLayout>
   );

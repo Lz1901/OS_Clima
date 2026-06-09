@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import {
   ClipboardCheck,
   Users,
@@ -23,11 +23,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { AppLayout, PageHeader } from "@/components/app-layout";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { formatDateTime, statusLabel, formatCurrency } from "@/lib/format";
-import { seedDemoData } from "@/lib/seed";
+
 import { useAuth } from "@/hooks/use-auth";
-import { toast } from "sonner";
 
 export const Route = createFileRoute("/dashboard")({
   component: () => (
@@ -74,7 +72,7 @@ function StatCard({
 
 function DashboardPage() {
   const { profile, hasPermission } = useAuth();
-  const qc = useQueryClient();
+  
   
   const { data: stats } = useQuery({
     queryKey: ["dashboard-stats"],
@@ -151,17 +149,6 @@ function DashboardPage() {
       <PageHeader
         title="Dashboard"
         description="Visão geral das operações de PMOC"
-        action={
-          (stats?.totalPmocs ?? 0) === 0 && (
-            <Button variant="outline" size="sm" onClick={async () => {
-              await seedDemoData(profile!.company_id, profile!.id);
-              qc.invalidateQueries();
-              toast.success("Dados de demonstração gerados!");
-            }}>
-              Gerar dados demo
-            </Button>
-          )
-        }
       />
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
