@@ -23,11 +23,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { AppLayout, PageHeader } from "@/components/app-layout";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { formatDateTime, statusLabel, formatCurrency } from "@/lib/format";
 
 import { useAuth } from "@/hooks/use-auth";
-import { toast } from "sonner";
 
 export const Route = createFileRoute("/dashboard")({
   component: () => (
@@ -74,7 +72,7 @@ function StatCard({
 
 function DashboardPage() {
   const { profile, hasPermission } = useAuth();
-  const qc = useQueryClient();
+  
   
   const { data: stats } = useQuery({
     queryKey: ["dashboard-stats"],
