@@ -26,6 +26,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -65,6 +69,8 @@ function FinanceiroPage() {
   const [stats, setStats] = useState({ receita: 0, despesa: 0, saldo: 0 });
   const [searchTerm, setSearchTerm] = useState("");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [pendingDelete, setPendingDelete] = useState<any>(null);
+  const [deleting, setDeleting] = useState(false);
 
   // Form State
   const [formData, setFormData] = useState({
