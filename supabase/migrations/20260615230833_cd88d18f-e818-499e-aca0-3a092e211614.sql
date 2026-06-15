@@ -1,0 +1,1 @@
+DROP POLICY IF EXISTS "tenant insert logs" ON public.activity_logs;
