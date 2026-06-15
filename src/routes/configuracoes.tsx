@@ -14,7 +14,9 @@ import { Label } from "@/components/ui/label";
 export const Route = createFileRoute("/configuracoes")({
   component: () => (
     <AppLayout>
-      <Config />
+      <RequirePermission permission="configuracoes.view">
+        <Config />
+      </RequirePermission>
     </AppLayout>
   ),
 });
