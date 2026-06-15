@@ -166,9 +166,11 @@ function EquipamentosPage() {
         title="Equipamentos"
         description={`${equipamentos.length} equipamento(s) · ${filtered.length} exibido(s)`}
         action={
-          <Button onClick={() => { setEditing(null); setOpen(true); }} disabled={!unidades.length}>
-            <Plus className="h-4 w-4 mr-2" /> Novo equipamento
-          </Button>
+          <PermissionGate permission="equipamentos.create">
+            <Button onClick={() => { setEditing(null); setOpen(true); }} disabled={!unidades.length}>
+              <Plus className="h-4 w-4 mr-2" /> Novo equipamento
+            </Button>
+          </PermissionGate>
         }
       />
 
