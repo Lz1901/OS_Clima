@@ -215,8 +215,6 @@ function FinanceiroPage() {
         .select("id")
         .single();
 
-      console.log("[Financeiro][Criar] Resultado:", result);
-      console.log("[Financeiro][Criar] Erro:", result.error);
 
       if (result.error) throw result.error;
 
