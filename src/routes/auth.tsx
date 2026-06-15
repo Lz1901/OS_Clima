@@ -1,5 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
+import { useServerFn } from "@tanstack/react-start";
 import { Snowflake } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -9,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { requestPasswordReset, sendWelcomeEmail } from "@/lib/email.functions";
 
 export const Route = createFileRoute("/auth")({
   component: AuthPage,
@@ -34,6 +36,9 @@ function AuthPage() {
 
   const [resetEmail, setResetEmail] = useState("");
 
+  const resetFn = useServerFn(requestPasswordReset);
+  const welcomeFn = useServerFn(sendWelcomeEmail);
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -56,21 +61,33 @@ function AuthPage() {
         data: { nome, company_name: empresa },
       },
     });
+    if (error) {
+      setLoading(false);
+      return toast.error(error.message);
+    }
+    // Email de boas-vindas via Resend (não bloqueia o login).
+    welcomeFn({ data: { appUrl: window.location.origin } }).catch(() => {});
     setLoading(false);
-    if (error) return toast.error(error.message);
-    toast.success("Conta criada! Verifique seu email para confirmar.");
+    toast.success("Conta criada! Você já pode entrar.");
     setTab("login");
   };
 
   const handleReset = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    const { error } = await supabase.auth.resetPasswordForEmail(resetEmail, {
-      redirectTo: `${window.location.origin}/reset-password`,
-    });
-    setLoading(false);
-    if (error) return toast.error(error.message);
-    toast.success("Email de recuperação enviado!");
+    try {
+      await resetFn({
+        data: {
+          email: resetEmail,
+          redirectTo: `${window.location.origin}/reset-password`,
+        },
+      });
+      toast.success("Se o e-mail estiver cadastrado, enviaremos um link de recuperação.");
+    } catch (err: any) {
+      toast.error(err?.message ?? "Erro ao solicitar redefinição");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (

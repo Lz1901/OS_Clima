@@ -66,6 +66,7 @@ export const inviteFuncionario = createServerFn({ method: "POST" })
       nome: z.string().trim().min(2).max(120),
       email: z.string().trim().email().max(255),
       role: z.enum(ROLES),
+      appUrl: z.string().url().max(500),
     }).parse(input)
   )
   .handler(async ({ context, data }) => {
@@ -82,6 +83,13 @@ export const inviteFuncionario = createServerFn({ method: "POST" })
     );
     if (found) throw new Error("Já existe um usuário com este e-mail");
 
+    // Empresa para usar no template do e-mail
+    const { data: company } = await supabaseAdmin
+      .from("companies")
+      .select("nome")
+      .eq("id", companyId)
+      .maybeSingle();
+
     // Cria um pending invite server-side. O trigger handle_new_user usa
     // essa tabela (não a metadata enviada pelo usuário) para vincular o
     // novo usuário à empresa correta, evitando escalonamento cross-tenant.
@@ -95,14 +103,40 @@ export const inviteFuncionario = createServerFn({ method: "POST" })
       });
     if (pendingErr) throw new Error(pendingErr.message);
 
-    const { data: invited, error: inviteErr } =
-      await supabaseAdmin.auth.admin.inviteUserByEmail(data.email, {
-        data: { nome: data.nome },
+    // Gera um link de convite (cria o usuário em auth.users de forma
+    // pendente) e envia via Resend com template próprio.
+    const redirectTo = `${data.appUrl.replace(/\/$/, "")}/reset-password`;
+    const { data: linkData, error: linkErr } =
+      await supabaseAdmin.auth.admin.generateLink({
+        type: "invite",
+        email: data.email.toLowerCase(),
+        options: { redirectTo, data: { nome: data.nome } },
       });
-    if (inviteErr || !invited.user) {
-      throw new Error(inviteErr?.message ?? "Erro ao convidar funcionário");
+
+    if (linkErr || !linkData?.properties?.action_link || !linkData.user) {
+      throw new Error(linkErr?.message ?? "Erro ao gerar link de convite");
     }
-    return { success: true, userId: invited.user.id };
+
+    const { sendEmail, inviteTemplate } = await import("@/lib/email.server");
+    const emailResult = await sendEmail({
+      to: data.email,
+      subject: `Convite para ${company?.nome ?? "OS Clima"}`,
+      html: inviteTemplate({
+        nome: data.nome,
+        empresa: company?.nome ?? "OS Clima",
+        link: linkData.properties.action_link,
+      }),
+    });
+
+    // Fallback: se o envio falhar, o usuário já foi criado e o invite
+    // existe — retornamos o link para o admin compartilhar manualmente.
+    return {
+      success: true,
+      userId: linkData.user.id,
+      emailSent: emailResult.ok,
+      emailError: emailResult.ok ? null : emailResult.error,
+      inviteLink: emailResult.ok ? null : linkData.properties.action_link,
+    };
   });
 
 export const updateFuncionarioRoles = createServerFn({ method: "POST" })
