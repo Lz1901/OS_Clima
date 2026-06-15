@@ -1,4 +1,5 @@
-import { useState, useEffect } from "react";
+import { useMemo, useState, useEffect } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { AppLayout } from "@/components/app-layout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -61,13 +62,16 @@ export const Route = createFileRoute("/financeiro")({
 });
 
 function FinanceiroPage() {
-  const { profile } = useAuth();
+  const { user, profile, hasPermission, refreshProfile } = useAuth();
+  const queryClient = useQueryClient();
   const [loading, setLoading] = useState(true);
   const [transactions, setTransactions] = useState<any[]>([]);
   const [categories, setCategories] = useState<any[]>([]);
   const [clientes, setClientes] = useState<any[]>([]);
   const [stats, setStats] = useState({ receita: 0, despesa: 0, saldo: 0 });
   const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState("todos");
+  const [typeFilter, setTypeFilter] = useState("todos");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [pendingDelete, setPendingDelete] = useState<any>(null);
   const [deleting, setDeleting] = useState(false);
@@ -83,35 +87,64 @@ function FinanceiroPage() {
     status: "pendente",
   });
 
+  const calculateStats = (items: any[]) => {
+    const receita = items
+      .filter((t) => t.tipo === "receita" && t.status === "pago")
+      .reduce((acc, t) => acc + Number(t.valor), 0);
+    const despesa = items
+      .filter((t) => t.tipo === "despesa" && t.status === "pago")
+      .reduce((acc, t) => acc + Number(t.valor), 0);
+
+    return { receita, despesa, saldo: receita - despesa };
+  };
+
+  const applyTransactions = (items: any[]) => {
+    setTransactions(items);
+    setStats(calculateStats(items));
+  };
+
+  const logDeleteStep = (message: string, payload?: unknown) => {
+    if (payload !== undefined) {
+      console.log(`[Financeiro][Excluir] ${message}`, payload);
+      return;
+    }
+    console.log(`[Financeiro][Excluir] ${message}`);
+  };
+
+  useEffect(() => {
+    if (user?.id) {
+      refreshProfile().catch((error) => {
+        console.log("Erro:", error);
+      });
+    }
+  }, [user?.id]);
+
   const fetchData = async () => {
-    if (!profile?.company_id) return;
+    if (!profile?.company_id) {
+      applyTransactions([]);
+      setLoading(false);
+      return;
+    }
     setLoading(true);
     try {
       const [transRes, catRes, cliRes] = await Promise.all([
         supabase
           .from("financial_transactions")
           .select("*, financial_categories(nome), clientes(razao_social)")
+          .eq("company_id", profile.company_id)
           .order("data_vencimento", { ascending: false }),
-        supabase.from("financial_categories").select("*"),
-        supabase.from("clientes").select("id, razao_social"),
+        supabase.from("financial_categories").select("*").eq("company_id", profile.company_id).order("nome"),
+        supabase.from("clientes").select("id, razao_social").eq("company_id", profile.company_id).order("razao_social"),
       ]);
 
-      if (transRes.data) {
-        setTransactions(transRes.data);
-        
-        const receita = transRes.data
-          .filter(t => t.tipo === "receita" && t.status === "pago")
-          .reduce((acc, t) => acc + Number(t.valor), 0);
-        const despesa = transRes.data
-          .filter(t => t.tipo === "despesa" && t.status === "pago")
-          .reduce((acc, t) => acc + Number(t.valor), 0);
-        
-        setStats({
-          receita,
-          despesa,
-          saldo: receita - despesa
-        });
-      }
+      console.log("[Financeiro][fetchData] Resultado:", { transRes, catRes, cliRes });
+      console.log("[Financeiro][fetchData] Erro:", transRes.error ?? catRes.error ?? cliRes.error);
+
+      if (transRes.error) throw transRes.error;
+      if (catRes.error) throw catRes.error;
+      if (cliRes.error) throw cliRes.error;
+
+      applyTransactions(transRes.data ?? []);
       if (catRes.data) setCategories(catRes.data);
       if (cliRes.data) setClientes(cliRes.data);
     } catch (error) {
@@ -130,19 +163,33 @@ function FinanceiroPage() {
     e.preventDefault();
     if (!profile?.company_id) return;
 
+    const valor = Number(formData.valor);
+    if (!formData.categoria_id) {
+      toast.error("Selecione uma categoria para salvar a transação.");
+      return;
+    }
+    if (!Number.isFinite(valor) || valor <= 0) {
+      toast.error("Informe um valor válido maior que zero.");
+      return;
+    }
+
     try {
-      const { error } = await supabase.from("financial_transactions").insert({
+      const result = await supabase.from("financial_transactions").insert({
         ...formData,
-        valor: parseFloat(formData.valor),
+        valor,
         company_id: profile.company_id,
         cliente_id: formData.cliente_id || null,
-      });
+      }).select("id").single();
 
-      if (error) throw error;
+      console.log("[Financeiro][Criar] Resultado:", result);
+      console.log("[Financeiro][Criar] Erro:", result.error);
+
+      if (result.error) throw result.error;
 
       toast.success("Transação registrada com sucesso");
       setIsDialogOpen(false);
-      fetchData();
+      await fetchData();
+      queryClient.invalidateQueries({ queryKey: ["dashboard-stats"] });
       setFormData({
         descricao: "",
         valor: "",
@@ -159,35 +206,117 @@ function FinanceiroPage() {
 
   const handleStatusUpdate = async (id: string, newStatus: string) => {
     try {
-      const { error } = await supabase
+      const result = await supabase
         .from("financial_transactions")
         .update({ 
           status: newStatus,
           data_pagamento: newStatus === 'pago' ? new Date().toISOString() : null
         })
-        .eq("id", id);
+        .eq("id", id)
+        .eq("company_id", profile?.company_id ?? "")
+        .select("id")
+        .maybeSingle();
 
-      if (error) throw error;
+      console.log("[Financeiro][Status] Resultado:", result);
+      console.log("[Financeiro][Status] Erro:", result.error);
+
+      if (result.error) throw result.error;
+      if (!result.data) throw new Error("Status não atualizado. Registro não encontrado ou sem permissão.");
       toast.success("Status atualizado");
-      fetchData();
+      await fetchData();
+      queryClient.invalidateQueries({ queryKey: ["dashboard-stats"] });
     } catch (error: any) {
       toast.error(error.message);
     }
   };
 
-  const handleDelete = async (id: string) => {
+  const handleDelete = async (id: string, origem = "confirmacao") => {
+    console.log("Iniciando exclusão");
+    console.log("ID da transação:", id);
+    console.log("Usuário:", user?.id);
+    logDeleteStep("Origem do clique", origem);
+    logDeleteStep("Profile", profile);
+    logDeleteStep("Permissões financeiras", {
+      view: hasPermission("financeiro.view"),
+      create: hasPermission("financeiro.create"),
+      edit: hasPermission("financeiro.edit"),
+      delete: hasPermission("financeiro.delete"),
+      manage: hasPermission("financeiro.manage"),
+    });
+
+    if (!id) {
+      const error = new Error("ID da transação não foi recebido.");
+      console.log("Erro:", error);
+      toast.error(error.message);
+      return;
+    }
+
+    if (!profile?.company_id) {
+      const error = new Error("Empresa do usuário não carregada. Recarregue a página e tente novamente.");
+      console.log("Erro:", error);
+      toast.error(error.message);
+      return;
+    }
+
     setDeleting(true);
+    let result: any = null;
+    let error: any = null;
     try {
-      const { error } = await supabase
+      const userResult = await supabase.auth.getUser();
+      console.log("Usuário:", userResult.data.user?.id);
+      console.log("Resultado:", userResult);
+      console.log("Erro:", userResult.error);
+      if (userResult.error || !userResult.data.user) {
+        throw userResult.error ?? new Error("Usuário não autenticado para excluir transações.");
+      }
+
+      const existsResult = await supabase
+        .from("financial_transactions")
+        .select("id, company_id, descricao, valor, status")
+        .eq("id", id)
+        .maybeSingle();
+      console.log("Resultado:", existsResult);
+      console.log("Erro:", existsResult.error);
+      if (existsResult.error) throw existsResult.error;
+      if (!existsResult.data) {
+        throw new Error("Transação não encontrada ou sem permissão de visualização.");
+      }
+
+      result = await supabase
         .from("financial_transactions")
         .delete()
-        .eq("id", id);
+        .eq("id", id)
+        .eq("company_id", profile.company_id)
+        .select("id, descricao")
+        .maybeSingle();
+      error = result.error;
+      console.log("Resultado:", result);
+      console.log("Erro:", error);
       if (error) throw error;
-      // Atualiza UI imediatamente; refetch garante consistência
-      setTransactions((prev) => prev.filter((t) => t.id !== id));
+      if (!result.data) {
+        throw new Error("A exclusão não foi aplicada. Verifique permissão de exclusão ou se o registro ainda existe.");
+      }
+
+      const verifyResult = await supabase
+        .from("financial_transactions")
+        .select("id")
+        .eq("id", id)
+        .maybeSingle();
+      console.log("Resultado:", verifyResult);
+      console.log("Erro:", verifyResult.error);
+      if (verifyResult.error) throw verifyResult.error;
+      if (verifyResult.data) {
+        throw new Error("O banco retornou sucesso, mas o registro continua existindo após a exclusão.");
+      }
+
+      const nextTransactions = transactions.filter((t) => t.id !== id);
+      applyTransactions(nextTransactions);
       toast.success("Transação excluída");
-      fetchData();
+      await fetchData();
+      queryClient.invalidateQueries({ queryKey: ["dashboard-stats"] });
     } catch (error: any) {
+      console.log("Resultado:", result);
+      console.log("Erro:", error);
       toast.error(error.message ?? "Falha ao excluir transação");
     } finally {
       setDeleting(false);
@@ -195,10 +324,22 @@ function FinanceiroPage() {
     }
   };
 
-  const filteredTransactions = transactions.filter(t => 
-    t.descricao.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    t.financial_categories?.nome.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredTransactions = useMemo(() => {
+    const term = searchTerm.trim().toLowerCase();
+    return transactions.filter((t) => {
+      const matchesSearch = !term || [
+        t.descricao,
+        t.financial_categories?.nome,
+        t.clientes?.razao_social,
+        t.status,
+        t.tipo,
+        String(t.valor ?? ""),
+      ].join(" ").toLowerCase().includes(term);
+      const matchesStatus = statusFilter === "todos" || t.status === statusFilter;
+      const matchesType = typeFilter === "todos" || t.tipo === typeFilter;
+      return matchesSearch && matchesStatus && matchesType;
+    });
+  }, [transactions, searchTerm, statusFilter, typeFilter]);
 
   return (
     <AppLayout>
