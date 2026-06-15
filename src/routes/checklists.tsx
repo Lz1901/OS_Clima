@@ -59,9 +59,11 @@ function ChecklistsPage() {
         title="Checklists"
         description="Gerencie seus modelos de inspeção PMOC"
         action={
-          <Button onClick={() => { setEditingTemplate(null); setOpen(true); }}>
-            <Plus className="h-4 w-4 mr-2" /> Novo Modelo
-          </Button>
+          <PermissionGate permission={["configuracoes.edit", "configuracoes.manage"]}>
+            <Button onClick={() => { setEditingTemplate(null); setOpen(true); }}>
+              <Plus className="h-4 w-4 mr-2" /> Novo Modelo
+            </Button>
+          </PermissionGate>
         }
       />
 
