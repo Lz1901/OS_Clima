@@ -69,23 +69,30 @@ type Role = (typeof ROLES)[number];
 export const Route = createFileRoute("/funcionarios")({
   component: () => (
     <AppLayout>
-      <FuncionariosPage />
+      <RequirePermission permission="funcionarios.view">
+        <FuncionariosPage />
+      </RequirePermission>
     </AppLayout>
   ),
 });
 
 function FuncionariosPage() {
   const { profile, hasPermission } = useAuth();
-  const isAdmin = profile?.is_super_admin || hasPermission("configuracoes.manage");
+  const canManage =
+    profile?.is_super_admin ||
+    hasPermission("funcionarios.edit") ||
+    hasPermission("funcionarios.create") ||
+    hasPermission("configuracoes.manage");
 
-  if (!isAdmin) {
+  if (!canManage) {
     return (
       <>
         <PageHeader title="Funcionários" />
         <Card className="p-8 text-center">
           <Shield className="h-10 w-10 mx-auto text-muted-foreground mb-2" />
           <p className="text-sm text-muted-foreground">
-            Apenas administradores podem gerenciar funcionários.
+            Você pode visualizar a equipe, mas apenas administradores podem
+            convidar ou alterar cargos.
           </p>
         </Card>
       </>
