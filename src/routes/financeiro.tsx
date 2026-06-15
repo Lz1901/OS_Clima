@@ -132,14 +132,6 @@ function FinanceiroPage() {
     console.log(`[Financeiro][Excluir] ${message}`);
   };
 
-  useEffect(() => {
-    if (user?.id) {
-      refreshProfile().catch((error) => {
-        console.log("Erro:", error);
-      });
-    }
-  }, [user?.id]);
-
   const fetchData = async () => {
     if (!profile?.company_id) {
       applyTransactions([]);
