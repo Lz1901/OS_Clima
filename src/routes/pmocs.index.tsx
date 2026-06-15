@@ -84,9 +84,11 @@ function PmocsPage() {
         title="PMOCs"
         description={`${pmocs.length} ordem(ns) de serviço`}
         action={
-          <Button onClick={() => setOpen(true)}>
-            <Plus className="h-4 w-4 mr-2" /> Nova PMOC
-          </Button>
+          <PermissionGate permission={["pmoc.create", "pmoc.execute"]}>
+            <Button onClick={() => setOpen(true)}>
+              <Plus className="h-4 w-4 mr-2" /> Nova PMOC
+            </Button>
+          </PermissionGate>
         }
       />
 
