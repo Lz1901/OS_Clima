@@ -146,9 +146,11 @@ function PmocsPage() {
                       <Eye className="h-4 w-4" />
                     </Link>
                   </Button>
-                  <Button variant="ghost" size="icon" onClick={() => confirm("Remover esta PMOC?") && remove.mutate(p.id)}>
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
+                  <PermissionGate permission="pmoc.delete">
+                    <Button variant="ghost" size="icon" onClick={() => confirm("Remover esta PMOC?") && remove.mutate(p.id)}>
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </PermissionGate>
                 </div>
               </div>
             ))}
