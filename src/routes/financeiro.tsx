@@ -95,7 +95,7 @@ export const Route = createFileRoute("/financeiro")({
 });
 
 function FinanceiroPage() {
-  const { user, profile, hasPermission } = useAuth();
+  const { profile, hasPermission } = useAuth();
   const queryClient = useQueryClient();
   const [loading, setLoading] = useState(true);
   const [transactions, setTransactions] = useState<FinancialTransaction[]>([]);
@@ -130,13 +130,7 @@ function FinanceiroPage() {
     setStats(calculateStats(items));
   }, []);
 
-  const logDeleteStep = (message: string, payload?: unknown) => {
-    if (payload !== undefined) {
-      console.log(`[Financeiro][Excluir] ${message}`, payload);
-      return;
-    }
-    console.log(`[Financeiro][Excluir] ${message}`);
-  };
+  
 
   const fetchData = useCallback(async () => {
     if (!profile?.company_id) {
@@ -171,8 +165,6 @@ function FinanceiroPage() {
           .order("razao_social"),
       ]);
 
-      console.log("[Financeiro][fetchData] Resultado:", { transRes, catRes, cliRes });
-      console.log("[Financeiro][fetchData] Erro:", transRes.error ?? catRes.error ?? cliRes.error);
 
       if (transRes.error) throw transRes.error;
       if (catRes.error) throw catRes.error;
@@ -223,8 +215,6 @@ function FinanceiroPage() {
         .select("id")
         .single();
 
-      console.log("[Financeiro][Criar] Resultado:", result);
-      console.log("[Financeiro][Criar] Erro:", result.error);
 
       if (result.error) throw result.error;
 
@@ -264,8 +254,6 @@ function FinanceiroPage() {
         .select("id")
         .maybeSingle();
 
-      console.log("[Financeiro][Status] Resultado:", result);
-      console.log("[Financeiro][Status] Erro:", result.error);
 
       if (result.error) throw result.error;
       if (!result.data) {
@@ -279,115 +267,39 @@ function FinanceiroPage() {
     }
   };
 
-  const handleDelete = async (id: string, origem = "confirmacao") => {
-    console.log("Iniciando exclusão");
-    console.log("ID da transação:", id);
-    console.log("Usuário:", user?.id);
-    logDeleteStep("Origem do clique", origem);
-    logDeleteStep("Profile", profile);
-    logDeleteStep("Permissões financeiras", {
-      view: hasPermission("financeiro.view"),
-      create: hasPermission("financeiro.create"),
-      edit: hasPermission("financeiro.edit"),
-      delete: hasPermission("financeiro.delete"),
-      manage: hasPermission("financeiro.manage"),
-    });
-
-    if (!id) {
-      const error = new Error("ID da transação não foi recebido.");
-      console.log("Erro:", error);
-      toast.error(error.message);
-      return;
-    }
-
-    if (!profile?.company_id) {
-      const error = new Error(
-        "Empresa do usuário não carregada. Recarregue a página e tente novamente.",
-      );
-      console.log("Erro:", error);
-      toast.error(error.message);
-      return;
-    }
-
+  const handleDelete = async (id: string) => {
+    if (!id || !profile?.company_id) return;
     if (!canDeleteFinance) {
-      const error = new Error("Você não tem permissão para excluir transações financeiras.");
-      console.log("Erro:", error);
-      toast.error(error.message);
+      toast.error("Você não tem permissão para excluir transações financeiras.");
       return;
     }
 
     setDeleting(true);
-    let result: {
-      data: { id: string; descricao: string } | null;
-      error: unknown;
-    } | null = null;
-    let error: unknown = null;
     try {
-      const userResult = await supabase.auth.getUser();
-      console.log("Usuário:", userResult.data.user?.id);
-      console.log("Resultado:", userResult);
-      console.log("Erro:", userResult.error);
-      if (userResult.error || !userResult.data.user) {
-        throw userResult.error ?? new Error("Usuário não autenticado para excluir transações.");
-      }
-
-      const existsResult = await supabase
-        .from("financial_transactions")
-        .select("id, company_id, descricao, valor, status")
-        .eq("id", id)
-        .maybeSingle();
-      console.log("Resultado:", existsResult);
-      console.log("Erro:", existsResult.error);
-      if (existsResult.error) throw existsResult.error;
-      if (!existsResult.data) {
-        throw new Error("Transação não encontrada ou sem permissão de visualização.");
-      }
-
-      result = await supabase
+      const { data, error } = await supabase
         .from("financial_transactions")
         .delete()
         .eq("id", id)
         .eq("company_id", profile.company_id)
-        .select("id, descricao")
-        .maybeSingle();
-      error = result.error;
-      console.log("Resultado:", result);
-      console.log("Erro:", error);
-      if (error) throw error;
-      if (!result.data) {
-        throw new Error(
-          "A exclusão não foi aplicada. Verifique permissão de exclusão ou se o registro ainda existe.",
-        );
-      }
-
-      const verifyResult = await supabase
-        .from("financial_transactions")
         .select("id")
-        .eq("id", id)
         .maybeSingle();
-      console.log("Resultado:", verifyResult);
-      console.log("Erro:", verifyResult.error);
-      if (verifyResult.error) throw verifyResult.error;
-      if (verifyResult.data) {
-        throw new Error(
-          "O banco retornou sucesso, mas o registro continua existindo após a exclusão.",
-        );
+
+      if (error) throw error;
+      if (!data) {
+        throw new Error("A exclusão não foi aplicada. Verifique sua permissão.");
       }
 
-      const nextTransactions = transactions.filter((t) => t.id !== id);
-      applyTransactions(nextTransactions);
+      applyTransactions(transactions.filter((t) => t.id !== id));
       toast.success("Transação excluída");
-      await fetchData();
       queryClient.invalidateQueries({ queryKey: ["dashboard-stats"] });
     } catch (error: unknown) {
-      console.log("Resultado:", result);
-      console.log("Erro:", error);
       toast.error(getErrorMessage(error, "Falha ao excluir transação"));
     } finally {
       setDeleting(false);
       setPendingDelete(null);
     }
   };
+
 
   const filteredTransactions = useMemo(() => {
     const term = searchTerm.trim().toLowerCase();
@@ -681,21 +593,6 @@ function FinanceiroPage() {
                         </TableCell>
                         <TableCell className="text-right">
                           <div className="flex items-center justify-end gap-2">
-                            {canDeleteFinance && (
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                disabled={deleting}
-                                onClick={() => {
-                                  console.log("Iniciando exclusão");
-                                  console.log("ID da transação:", t.id);
-                                  console.log("Usuário:", user?.id);
-                                  handleDelete(t.id, "botao-teste-direto");
-                                }}
-                              >
-                                Excluir esta transação agora
-                              </Button>
-                            )}
                             <DropdownMenu>
                               <DropdownMenuTrigger asChild>
                                 <Button
@@ -726,11 +623,6 @@ function FinanceiroPage() {
                                     className="text-destructive focus:text-destructive"
                                     onSelect={(e) => {
                                       e.preventDefault();
-                                      console.log("Iniciando exclusão");
-                                      console.log("ID da transação:", t.id);
-                                      console.log("Usuário:", user?.id);
-                                      console.log("Resultado:", { origem: "menu", transacao: t });
-                                      console.log("Erro:", null);
                                       setPendingDelete(t);
                                     }}
                                   >
@@ -753,8 +645,6 @@ function FinanceiroPage() {
         <AlertDialog
           open={!!pendingDelete}
           onOpenChange={(open) => {
-            console.log("[Financeiro][AlertDialog] Resultado:", { open, pendingDelete });
-            console.log("[Financeiro][AlertDialog] Erro:", null);
             if (!open && !deleting) setPendingDelete(null);
           }}
         >
@@ -782,12 +672,7 @@ function FinanceiroPage() {
                 disabled={deleting}
                 onClick={(e) => {
                   e.preventDefault();
-                  console.log("Iniciando exclusão");
-                  console.log("ID da transação:", pendingDelete?.id);
-                  console.log("Usuário:", user?.id);
-                  console.log("Resultado:", { origem: "alert-dialog", pendingDelete });
-                  console.log("Erro:", null);
-                  if (pendingDelete) handleDelete(pendingDelete.id, "alert-dialog");
+                  if (pendingDelete) handleDelete(pendingDelete.id);
                 }}
                 className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
               >
