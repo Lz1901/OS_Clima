@@ -1076,6 +1076,7 @@ export type Database = {
         | "finalizado"
         | "aguardando_aprovacao"
         | "cancelado"
+        | "finalizada"
       unidade_tipo: "matriz" | "filial" | "loja" | "escritorio" | "condominio"
     }
     CompositeTypes: {
@@ -1230,6 +1231,7 @@ export const Constants = {
         "finalizado",
         "aguardando_aprovacao",
         "cancelado",
+        "finalizada",
       ],
       unidade_tipo: ["matriz", "filial", "loja", "escritorio", "condominio"],
     },
