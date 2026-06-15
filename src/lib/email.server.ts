@@ -30,9 +30,20 @@ export async function sendEmail({ to, subject, html, from }: SendArgs): Promise<
   const RESEND_API_KEY = process.env.RESEND_API_KEY;
 
   if (!LOVABLE_API_KEY || !RESEND_API_KEY) {
-    console.error("[email] Missing LOVABLE_API_KEY or RESEND_API_KEY");
+    console.error("[email] Missing LOVABLE_API_KEY or RESEND_API_KEY", {
+      hasLovable: !!LOVABLE_API_KEY,
+      hasResend: !!RESEND_API_KEY,
+    });
     return { ok: false, error: "email_provider_not_configured" };
   }
+
+  const payload = { from: from ?? getFrom(), to: [to], subject, html };
+  console.log("[email] -> Resend send", {
+    to,
+    from: payload.from,
+    subject,
+    htmlBytes: html.length,
+  });
 
   try {
     const res = await fetch(`${GATEWAY_URL}/emails`, {
@@ -42,19 +53,29 @@ export async function sendEmail({ to, subject, html, from }: SendArgs): Promise<
         Authorization: `Bearer ${LOVABLE_API_KEY}`,
         "X-Connection-Api-Key": RESEND_API_KEY,
       },
-      body: JSON.stringify({
-        from: from ?? getFrom(),
-        to: [to],
-        subject,
-        html,
-      }),
+      body: JSON.stringify(payload),
     });
 
-    const body = await res.json().catch(() => ({}));
+    const raw = await res.text();
+    let body: any = {};
+    try { body = raw ? JSON.parse(raw) : {}; } catch { body = { raw }; }
+
     if (!res.ok) {
-      console.error("[email] Resend send failed", res.status, body);
-      return { ok: false, error: body?.message ?? `http_${res.status}` };
+      const message =
+        body?.message ||
+        body?.error?.message ||
+        body?.raw ||
+        `http_${res.status}`;
+      console.error("[email] <- Resend ERROR", {
+        status: res.status,
+        name: body?.name,
+        message,
+        body,
+      });
+      return { ok: false, error: message };
     }
+
+    console.log("[email] <- Resend OK", { id: body?.id, to });
     return { ok: true, id: body?.id };
   } catch (err: any) {
     console.error("[email] Resend send exception", err);
