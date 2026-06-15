@@ -95,7 +95,7 @@ export const Route = createFileRoute("/financeiro")({
 });
 
 function FinanceiroPage() {
-  const { user, profile, hasPermission } = useAuth();
+  const { profile, hasPermission } = useAuth();
   const queryClient = useQueryClient();
   const [loading, setLoading] = useState(true);
   const [transactions, setTransactions] = useState<FinancialTransaction[]>([]);
