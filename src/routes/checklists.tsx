@@ -19,7 +19,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 export const Route = createFileRoute("/checklists")({
   component: () => (
     <AppLayout>
-      <ChecklistsPage />
+      <RequirePermission permission={["configuracoes.view", "configuracoes.manage"]}>
+        <ChecklistsPage />
+      </RequirePermission>
     </AppLayout>
   ),
 });
