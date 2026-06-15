@@ -4,6 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Activity, Search } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { AppLayout, PageHeader } from "@/components/app-layout";
+import { RequirePermission } from "@/components/permission-gate";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -12,7 +13,9 @@ import { formatDateTime } from "@/lib/format";
 export const Route = createFileRoute("/logs")({
   component: () => (
     <AppLayout>
-      <LogsPage />
+      <RequirePermission permission={["auditoria.view", "configuracoes.manage"]}>
+        <LogsPage />
+      </RequirePermission>
     </AppLayout>
   ),
 });

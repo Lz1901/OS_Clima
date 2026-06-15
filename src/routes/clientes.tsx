@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { AppLayout, PageHeader } from "@/components/app-layout";
+import { RequirePermission, PermissionGate } from "@/components/permission-gate";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -32,7 +33,9 @@ import {
 export const Route = createFileRoute("/clientes")({
   component: () => (
     <AppLayout>
-      <ClientesPage />
+      <RequirePermission permission="clientes.view">
+        <ClientesPage />
+      </RequirePermission>
     </AppLayout>
   ),
 });
@@ -112,9 +115,11 @@ function ClientesPage() {
         title="Clientes"
         description={`${clientes.length} cliente(s) cadastrado(s)`}
         action={
-          <Button onClick={() => { setEditing(null); setOpen(true); }}>
-            <Plus className="h-4 w-4 mr-2" /> Novo cliente
-          </Button>
+          <PermissionGate permission="clientes.create">
+            <Button onClick={() => { setEditing(null); setOpen(true); }}>
+              <Plus className="h-4 w-4 mr-2" /> Novo cliente
+            </Button>
+          </PermissionGate>
         }
       />
 
@@ -150,12 +155,16 @@ function ClientesPage() {
                   </div>
                 </div>
                 <div className="flex gap-1">
-                  <Button variant="ghost" size="icon" onClick={() => { setEditing(c); setOpen(true); }}>
-                    <Pencil className="h-4 w-4" />
-                  </Button>
-                  <Button variant="ghost" size="icon" onClick={() => setDeleteId(c.id)}>
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
+                  <PermissionGate permission="clientes.edit">
+                    <Button variant="ghost" size="icon" onClick={() => { setEditing(c); setOpen(true); }}>
+                      <Pencil className="h-4 w-4" />
+                    </Button>
+                  </PermissionGate>
+                  <PermissionGate permission="clientes.delete">
+                    <Button variant="ghost" size="icon" onClick={() => setDeleteId(c.id)}>
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </PermissionGate>
                 </div>
               </div>
             ))}

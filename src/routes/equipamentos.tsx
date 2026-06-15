@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { AppLayout, PageHeader } from "@/components/app-layout";
+import { RequirePermission, PermissionGate } from "@/components/permission-gate";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -27,7 +28,9 @@ import { equipamentoTipoLabel, statusLabel } from "@/lib/format";
 export const Route = createFileRoute("/equipamentos")({
   component: () => (
     <AppLayout>
-      <EquipamentosPage />
+      <RequirePermission permission="equipamentos.view">
+        <EquipamentosPage />
+      </RequirePermission>
     </AppLayout>
   ),
 });
@@ -163,9 +166,11 @@ function EquipamentosPage() {
         title="Equipamentos"
         description={`${equipamentos.length} equipamento(s) · ${filtered.length} exibido(s)`}
         action={
-          <Button onClick={() => { setEditing(null); setOpen(true); }} disabled={!unidades.length}>
-            <Plus className="h-4 w-4 mr-2" /> Novo equipamento
-          </Button>
+          <PermissionGate permission="equipamentos.create">
+            <Button onClick={() => { setEditing(null); setOpen(true); }} disabled={!unidades.length}>
+              <Plus className="h-4 w-4 mr-2" /> Novo equipamento
+            </Button>
+          </PermissionGate>
         }
       />
 
@@ -265,12 +270,16 @@ function EquipamentosPage() {
                                         <QrCode className="h-3 w-3 mr-1" /> Ver / QR
                                       </Link>
                                     </Button>
-                                    <Button variant="ghost" size="sm" onClick={() => { setEditing(eq); setOpen(true); }}>
-                                      <Pencil className="h-3 w-3" />
-                                    </Button>
-                                    <Button variant="ghost" size="sm" onClick={() => setPendingDelete(eq)}>
-                                      <Trash2 className="h-3 w-3" />
-                                    </Button>
+                                    <PermissionGate permission="equipamentos.edit">
+                                      <Button variant="ghost" size="sm" onClick={() => { setEditing(eq); setOpen(true); }}>
+                                        <Pencil className="h-3 w-3" />
+                                      </Button>
+                                    </PermissionGate>
+                                    <PermissionGate permission="equipamentos.delete">
+                                      <Button variant="ghost" size="sm" onClick={() => setPendingDelete(eq)}>
+                                        <Trash2 className="h-3 w-3" />
+                                      </Button>
+                                    </PermissionGate>
                                   </div>
                                 </Card>
                               ))}

@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { AppLayout, PageHeader } from "@/components/app-layout";
+import { RequirePermission, PermissionGate } from "@/components/permission-gate";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -13,7 +14,9 @@ import { Label } from "@/components/ui/label";
 export const Route = createFileRoute("/configuracoes")({
   component: () => (
     <AppLayout>
-      <Config />
+      <RequirePermission permission="configuracoes.view">
+        <Config />
+      </RequirePermission>
     </AppLayout>
   ),
 });
@@ -104,9 +107,11 @@ function Config() {
           </div>
         </div>
         <div className="flex justify-end mt-6">
-          <Button onClick={() => save.mutate()} disabled={save.isPending}>
-            {save.isPending ? "Salvando..." : "Salvar alterações"}
-          </Button>
+          <PermissionGate permission="configuracoes.edit">
+            <Button onClick={() => save.mutate()} disabled={save.isPending}>
+              {save.isPending ? "Salvando..." : "Salvar alterações"}
+            </Button>
+          </PermissionGate>
         </div>
       </Card>
     </>

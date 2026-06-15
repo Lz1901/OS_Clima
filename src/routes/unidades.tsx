@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { AppLayout, PageHeader } from "@/components/app-layout";
+import { RequirePermission, PermissionGate } from "@/components/permission-gate";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -22,7 +23,9 @@ import { unidadeTipoLabel } from "@/lib/format";
 export const Route = createFileRoute("/unidades")({
   component: () => (
     <AppLayout>
-      <UnidadesPage />
+      <RequirePermission permission="unidades.view">
+        <UnidadesPage />
+      </RequirePermission>
     </AppLayout>
   ),
 });
@@ -98,9 +101,11 @@ function UnidadesPage() {
         title="Unidades"
         description={`${unidades.length} unidade(s) cadastrada(s)`}
         action={
-          <Button onClick={() => { setEditing(null); setOpen(true); }} disabled={!clientes.length}>
-            <Plus className="h-4 w-4 mr-2" /> Nova unidade
-          </Button>
+          <PermissionGate permission="unidades.create">
+            <Button onClick={() => { setEditing(null); setOpen(true); }} disabled={!clientes.length}>
+              <Plus className="h-4 w-4 mr-2" /> Nova unidade
+            </Button>
+          </PermissionGate>
         }
       />
 
@@ -131,12 +136,16 @@ function UnidadesPage() {
                   </div>
                 </div>
                 <div className="flex gap-1">
-                  <Button variant="ghost" size="icon" onClick={() => { setEditing(u); setOpen(true); }}>
-                    <Pencil className="h-4 w-4" />
-                  </Button>
-                  <Button variant="ghost" size="icon" onClick={() => confirm("Remover?") && remove.mutate(u.id)}>
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
+                  <PermissionGate permission="unidades.edit">
+                    <Button variant="ghost" size="icon" onClick={() => { setEditing(u); setOpen(true); }}>
+                      <Pencil className="h-4 w-4" />
+                    </Button>
+                  </PermissionGate>
+                  <PermissionGate permission="unidades.delete">
+                    <Button variant="ghost" size="icon" onClick={() => confirm("Remover?") && remove.mutate(u.id)}>
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </PermissionGate>
                 </div>
               </div>
             ))}

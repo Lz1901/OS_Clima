@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { AppLayout } from "@/components/app-layout";
+import { RequirePermission } from "@/components/permission-gate";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -27,7 +28,9 @@ import { calcNext as calcNextDate } from "@/lib/pmoc";
 export const Route = createFileRoute("/pmocs/$pmocId")({
   component: () => (
     <AppLayout>
-      <PmocWizard />
+      <RequirePermission permission="pmoc.view">
+        <PmocWizard />
+      </RequirePermission>
     </AppLayout>
   ),
 });

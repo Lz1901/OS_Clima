@@ -1,6 +1,7 @@
 import { useCallback, useMemo, useState, useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { AppLayout } from "@/components/app-layout";
+import { AccessDenied } from "@/components/permission-gate";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -322,6 +323,14 @@ function FinanceiroPage() {
       return matchesSearch && matchesStatus && matchesType;
     });
   }, [transactions, searchTerm, statusFilter, typeFilter]);
+
+  if (!canViewFinance) {
+    return (
+      <AppLayout>
+        <AccessDenied />
+      </AppLayout>
+    );
+  }
 
   return (
     <AppLayout>

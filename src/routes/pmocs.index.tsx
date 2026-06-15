@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { AppLayout, PageHeader } from "@/components/app-layout";
+import { RequirePermission, PermissionGate } from "@/components/permission-gate";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -25,7 +26,9 @@ import { calcNext } from "@/lib/pmoc";
 export const Route = createFileRoute("/pmocs/")({
   component: () => (
     <AppLayout>
-      <PmocsPage />
+      <RequirePermission permission="pmoc.view">
+        <PmocsPage />
+      </RequirePermission>
     </AppLayout>
   ),
 });
@@ -81,9 +84,11 @@ function PmocsPage() {
         title="PMOCs"
         description={`${pmocs.length} ordem(ns) de serviço`}
         action={
-          <Button onClick={() => setOpen(true)}>
-            <Plus className="h-4 w-4 mr-2" /> Nova PMOC
-          </Button>
+          <PermissionGate permission={["pmoc.create", "pmoc.execute"]}>
+            <Button onClick={() => setOpen(true)}>
+              <Plus className="h-4 w-4 mr-2" /> Nova PMOC
+            </Button>
+          </PermissionGate>
         }
       />
 
@@ -141,9 +146,11 @@ function PmocsPage() {
                       <Eye className="h-4 w-4" />
                     </Link>
                   </Button>
-                  <Button variant="ghost" size="icon" onClick={() => confirm("Remover esta PMOC?") && remove.mutate(p.id)}>
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
+                  <PermissionGate permission="pmoc.delete">
+                    <Button variant="ghost" size="icon" onClick={() => confirm("Remover esta PMOC?") && remove.mutate(p.id)}>
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </PermissionGate>
                 </div>
               </div>
             ))}
