@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { AppLayout, PageHeader } from "@/components/app-layout";
+import { RequirePermission } from "@/components/permission-gate";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
