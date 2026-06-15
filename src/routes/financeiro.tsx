@@ -1,4 +1,4 @@
-import { useMemo, useState, useEffect } from "react";
+import { useCallback, useMemo, useState, useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { AppLayout } from "@/components/app-layout";
 import { Button } from "@/components/ui/button";
@@ -55,25 +55,41 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
 import { createFileRoute } from "@tanstack/react-router";
+import type { Database } from "@/integrations/supabase/types";
 
+type FinancialTransaction = Database["public"]["Tables"]["financial_transactions"]["Row"] & {
+  financial_categories?: { nome: string | null } | null;
+  clientes?: { razao_social: string | null } | null;
+};
+
+type FinancialCategory = Database["public"]["Tables"]["financial_categories"]["Row"];
+type ClienteOption = Pick<Database["public"]["Tables"]["clientes"]["Row"], "id" | "razao_social">;
+
+function getErrorMessage(error: unknown, fallback: string) {
+  if (error instanceof Error) return error.message;
+  if (typeof error === "object" && error !== null && "message" in error) {
+    return String((error as { message?: unknown }).message ?? fallback);
+  }
+  return fallback;
+}
 
 export const Route = createFileRoute("/financeiro")({
   component: FinanceiroPage,
 });
 
 function FinanceiroPage() {
-  const { user, profile, hasPermission, refreshProfile } = useAuth();
+  const { user, profile, hasPermission } = useAuth();
   const queryClient = useQueryClient();
   const [loading, setLoading] = useState(true);
-  const [transactions, setTransactions] = useState<any[]>([]);
-  const [categories, setCategories] = useState<any[]>([]);
-  const [clientes, setClientes] = useState<any[]>([]);
+  const [transactions, setTransactions] = useState<FinancialTransaction[]>([]);
+  const [categories, setCategories] = useState<FinancialCategory[]>([]);
+  const [clientes, setClientes] = useState<ClienteOption[]>([]);
   const [stats, setStats] = useState({ receita: 0, despesa: 0, saldo: 0 });
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("todos");
   const [typeFilter, setTypeFilter] = useState("todos");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [pendingDelete, setPendingDelete] = useState<any>(null);
+  const [pendingDelete, setPendingDelete] = useState<FinancialTransaction | null>(null);
   const [deleting, setDeleting] = useState(false);
 
   // Form State
