@@ -75,12 +75,16 @@ function ChecklistsPage() {
                 <ListChecks className="h-5 w-5" />
               </div>
               <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                <Button variant="ghost" size="icon" onClick={() => { setEditingTemplate(t); setOpen(true); }}>
-                  <Pencil className="h-4 w-4" />
-                </Button>
-                <Button variant="ghost" size="icon" onClick={() => confirm("Excluir este modelo?") && remove.mutate(t.id)}>
-                  <Trash2 className="h-4 w-4" />
-                </Button>
+                <PermissionGate permission={["configuracoes.edit", "configuracoes.manage"]}>
+                  <Button variant="ghost" size="icon" onClick={() => { setEditingTemplate(t); setOpen(true); }}>
+                    <Pencil className="h-4 w-4" />
+                  </Button>
+                </PermissionGate>
+                <PermissionGate permission={["configuracoes.edit", "configuracoes.manage"]}>
+                  <Button variant="ghost" size="icon" onClick={() => confirm("Excluir este modelo?") && remove.mutate(t.id)}>
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </PermissionGate>
               </div>
             </div>
             <p className="font-semibold text-lg">{t.nome}</p>
