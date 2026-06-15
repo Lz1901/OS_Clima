@@ -324,6 +324,14 @@ function FinanceiroPage() {
     });
   }, [transactions, searchTerm, statusFilter, typeFilter]);
 
+  if (!canViewFinance) {
+    return (
+      <AppLayout>
+        <AccessDenied />
+      </AppLayout>
+    );
+  }
+
   return (
     <AppLayout>
       <div className="p-4 md:p-8 space-y-8 max-w-7xl mx-auto">
