@@ -22,6 +22,7 @@ import { Route as ClientesRouteImport } from './routes/clientes'
 import { Route as ChecklistsRouteImport } from './routes/checklists'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AdminRouteImport } from './routes/admin'
+import { Route as AcceptInviteRouteImport } from './routes/accept-invite'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as PmocsIndexRouteImport } from './routes/pmocs.index'
 import { Route as ValidarEquipamentoIdRouteImport } from './routes/validar.$equipamentoId'
@@ -94,6 +95,11 @@ const AdminRoute = AdminRouteImport.update({
   path: '/admin',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AcceptInviteRoute = AcceptInviteRouteImport.update({
+  id: '/accept-invite',
+  path: '/accept-invite',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
@@ -129,6 +135,7 @@ const ApiPublicEquipamentoEquipamentoIdRoute =
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/accept-invite': typeof AcceptInviteRoute
   '/admin': typeof AdminRoute
   '/auth': typeof AuthRoute
   '/checklists': typeof ChecklistsRoute
@@ -150,6 +157,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/accept-invite': typeof AcceptInviteRoute
   '/admin': typeof AdminRoute
   '/auth': typeof AuthRoute
   '/checklists': typeof ChecklistsRoute
@@ -172,6 +180,7 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/accept-invite': typeof AcceptInviteRoute
   '/admin': typeof AdminRoute
   '/auth': typeof AuthRoute
   '/checklists': typeof ChecklistsRoute
@@ -195,6 +204,7 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/accept-invite'
     | '/admin'
     | '/auth'
     | '/checklists'
@@ -216,6 +226,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/accept-invite'
     | '/admin'
     | '/auth'
     | '/checklists'
@@ -237,6 +248,7 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
+    | '/accept-invite'
     | '/admin'
     | '/auth'
     | '/checklists'
@@ -259,6 +271,7 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AcceptInviteRoute: typeof AcceptInviteRoute
   AdminRoute: typeof AdminRoute
   AuthRoute: typeof AuthRoute
   ChecklistsRoute: typeof ChecklistsRoute
@@ -371,6 +384,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/accept-invite': {
+      id: '/accept-invite'
+      path: '/accept-invite'
+      fullPath: '/accept-invite'
+      preLoaderRoute: typeof AcceptInviteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -430,6 +450,7 @@ const EquipamentosRouteWithChildren = EquipamentosRoute._addFileChildren(
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AcceptInviteRoute: AcceptInviteRoute,
   AdminRoute: AdminRoute,
   AuthRoute: AuthRoute,
   ChecklistsRoute: ChecklistsRoute,
