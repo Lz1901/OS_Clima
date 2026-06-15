@@ -212,12 +212,16 @@ function FinanceiroPage() {
     }
 
     try {
-      const result = await supabase.from("financial_transactions").insert({
-        ...formData,
-        valor,
-        company_id: profile.company_id,
-        cliente_id: formData.cliente_id || null,
-      }).select("id").single();
+      const result = await supabase
+        .from("financial_transactions")
+        .insert({
+          ...formData,
+          valor,
+          company_id: profile.company_id,
+          cliente_id: formData.cliente_id || null,
+        })
+        .select("id")
+        .single();
 
       console.log("[Financeiro][Criar] Resultado:", result);
       console.log("[Financeiro][Criar] Erro:", result.error);
@@ -234,11 +238,11 @@ function FinanceiroPage() {
         tipo: "receita",
         categoria_id: "",
         cliente_id: "",
-        data_vencimento: new Date().toISOString().split('T')[0],
+        data_vencimento: new Date().toISOString().split("T")[0],
         status: "pendente",
       });
-    } catch (error: any) {
-      toast.error(error.message);
+    } catch (error: unknown) {
+      toast.error(getErrorMessage(error, "Erro ao registrar transação"));
     }
   };
 
@@ -251,9 +255,9 @@ function FinanceiroPage() {
     try {
       const result = await supabase
         .from("financial_transactions")
-        .update({ 
+        .update({
           status: newStatus,
-          data_pagamento: newStatus === 'pago' ? new Date().toISOString() : null
+          data_pagamento: newStatus === "pago" ? new Date().toISOString() : null,
         })
         .eq("id", id)
         .eq("company_id", profile?.company_id ?? "")
@@ -264,12 +268,14 @@ function FinanceiroPage() {
       console.log("[Financeiro][Status] Erro:", result.error);
 
       if (result.error) throw result.error;
-      if (!result.data) throw new Error("Status não atualizado. Registro não encontrado ou sem permissão.");
+      if (!result.data) {
+        throw new Error("Status não atualizado. Registro não encontrado ou sem permissão.");
+      }
       toast.success("Status atualizado");
       await fetchData();
       queryClient.invalidateQueries({ queryKey: ["dashboard-stats"] });
-    } catch (error: any) {
-      toast.error(error.message);
+    } catch (error: unknown) {
+      toast.error(getErrorMessage(error, "Erro ao atualizar status"));
     }
   };
 
@@ -309,8 +315,8 @@ function FinanceiroPage() {
     }
 
     setDeleting(true);
-    let result: any = null;
-    let error: any = null;
+    let result: unknown = null;
+    let error: unknown = null;
     try {
       const userResult = await supabase.auth.getUser();
       console.log("Usuário:", userResult.data.user?.id);
@@ -364,10 +370,10 @@ function FinanceiroPage() {
       toast.success("Transação excluída");
       await fetchData();
       queryClient.invalidateQueries({ queryKey: ["dashboard-stats"] });
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.log("Resultado:", result);
       console.log("Erro:", error);
-      toast.error(error.message ?? "Falha ao excluir transação");
+      toast.error(getErrorMessage(error, "Falha ao excluir transação"));
     } finally {
       setDeleting(false);
       setPendingDelete(null);
