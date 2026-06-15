@@ -5,7 +5,7 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { AppLayout, PageHeader } from "@/components/app-layout";
-import { RequirePermission } from "@/components/permission-gate";
+import { RequirePermission, PermissionGate } from "@/components/permission-gate";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
