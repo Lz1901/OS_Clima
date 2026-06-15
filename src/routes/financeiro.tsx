@@ -28,23 +28,29 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
-  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
-  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { 
-  DollarSign, 
-  ArrowUpCircle, 
-  ArrowDownCircle, 
-  Plus, 
-  Search, 
+import {
+  DollarSign,
+  ArrowUpCircle,
+  ArrowDownCircle,
+  Plus,
+  Search,
   Filter,
   MoreVertical,
   CheckCircle2,
   Clock,
-  AlertCircle
+  AlertCircle,
 } from "lucide-react";
 import { formatCurrency, formatDate } from "@/lib/format";
 import {
@@ -64,6 +70,17 @@ type FinancialTransaction = Database["public"]["Tables"]["financial_transactions
 
 type FinancialCategory = Database["public"]["Tables"]["financial_categories"]["Row"];
 type ClienteOption = Pick<Database["public"]["Tables"]["clientes"]["Row"], "id" | "razao_social">;
+
+function calculateStats(items: FinancialTransaction[]) {
+  const receita = items
+    .filter((t) => t.tipo === "receita" && t.status === "pago")
+    .reduce((acc, t) => acc + Number(t.valor), 0);
+  const despesa = items
+    .filter((t) => t.tipo === "despesa" && t.status === "pago")
+    .reduce((acc, t) => acc + Number(t.valor), 0);
+
+  return { receita, despesa, saldo: receita - despesa };
+}
 
 function getErrorMessage(error: unknown, fallback: string) {
   if (error instanceof Error) return error.message;
