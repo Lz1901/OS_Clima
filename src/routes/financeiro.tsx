@@ -87,6 +87,11 @@ function FinanceiroPage() {
     status: "pendente",
   });
 
+  const canViewFinance = hasPermission("financeiro.view") || hasPermission("financeiro.manage");
+  const canCreateFinance = hasPermission("financeiro.create") || hasPermission("financeiro.manage");
+  const canEditFinance = hasPermission("financeiro.edit") || hasPermission("financeiro.manage");
+  const canDeleteFinance = hasPermission("financeiro.delete") || hasPermission("financeiro.manage");
+
   const calculateStats = (items: any[]) => {
     const receita = items
       .filter((t) => t.tipo === "receita" && t.status === "pago")
@@ -125,6 +130,13 @@ function FinanceiroPage() {
       setLoading(false);
       return;
     }
+    if (!canViewFinance) {
+      applyTransactions([]);
+      setCategories([]);
+      setClientes([]);
+      setLoading(false);
+      return;
+    }
     setLoading(true);
     try {
       const [transRes, catRes, cliRes] = await Promise.all([
@@ -157,11 +169,15 @@ function FinanceiroPage() {
 
   useEffect(() => {
     fetchData();
-  }, [profile?.company_id]);
+  }, [profile?.company_id, canViewFinance]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!profile?.company_id) return;
+    if (!canCreateFinance) {
+      toast.error("Você não tem permissão para criar transações financeiras.");
+      return;
+    }
 
     const valor = Number(formData.valor);
     if (!formData.categoria_id) {
@@ -205,6 +221,11 @@ function FinanceiroPage() {
   };
 
   const handleStatusUpdate = async (id: string, newStatus: string) => {
+    if (!canEditFinance) {
+      toast.error("Você não tem permissão para alterar transações financeiras.");
+      return;
+    }
+
     try {
       const result = await supabase
         .from("financial_transactions")
@@ -253,6 +274,13 @@ function FinanceiroPage() {
 
     if (!profile?.company_id) {
       const error = new Error("Empresa do usuário não carregada. Recarregue a página e tente novamente.");
+      console.log("Erro:", error);
+      toast.error(error.message);
+      return;
+    }
+
+    if (!canDeleteFinance) {
+      const error = new Error("Você não tem permissão para excluir transações financeiras.");
       console.log("Erro:", error);
       toast.error(error.message);
       return;
