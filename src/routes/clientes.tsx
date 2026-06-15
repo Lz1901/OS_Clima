@@ -155,12 +155,16 @@ function ClientesPage() {
                   </div>
                 </div>
                 <div className="flex gap-1">
-                  <Button variant="ghost" size="icon" onClick={() => { setEditing(c); setOpen(true); }}>
-                    <Pencil className="h-4 w-4" />
-                  </Button>
-                  <Button variant="ghost" size="icon" onClick={() => setDeleteId(c.id)}>
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
+                  <PermissionGate permission="clientes.edit">
+                    <Button variant="ghost" size="icon" onClick={() => { setEditing(c); setOpen(true); }}>
+                      <Pencil className="h-4 w-4" />
+                    </Button>
+                  </PermissionGate>
+                  <PermissionGate permission="clientes.delete">
+                    <Button variant="ghost" size="icon" onClick={() => setDeleteId(c.id)}>
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </PermissionGate>
                 </div>
               </div>
             ))}
