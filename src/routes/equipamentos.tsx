@@ -270,12 +270,16 @@ function EquipamentosPage() {
                                         <QrCode className="h-3 w-3 mr-1" /> Ver / QR
                                       </Link>
                                     </Button>
-                                    <Button variant="ghost" size="sm" onClick={() => { setEditing(eq); setOpen(true); }}>
-                                      <Pencil className="h-3 w-3" />
-                                    </Button>
-                                    <Button variant="ghost" size="sm" onClick={() => setPendingDelete(eq)}>
-                                      <Trash2 className="h-3 w-3" />
-                                    </Button>
+                                    <PermissionGate permission="equipamentos.edit">
+                                      <Button variant="ghost" size="sm" onClick={() => { setEditing(eq); setOpen(true); }}>
+                                        <Pencil className="h-3 w-3" />
+                                      </Button>
+                                    </PermissionGate>
+                                    <PermissionGate permission="equipamentos.delete">
+                                      <Button variant="ghost" size="sm" onClick={() => setPendingDelete(eq)}>
+                                        <Trash2 className="h-3 w-3" />
+                                      </Button>
+                                    </PermissionGate>
                                   </div>
                                 </Card>
                               ))}
