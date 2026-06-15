@@ -315,7 +315,10 @@ function FinanceiroPage() {
     }
 
     setDeleting(true);
-    let result: unknown = null;
+    let result: {
+      data: { id: string; descricao: string } | null;
+      error: unknown;
+    } | null = null;
     let error: unknown = null;
     try {
       const userResult = await supabase.auth.getUser();
