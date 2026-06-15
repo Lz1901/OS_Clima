@@ -1028,7 +1028,41 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      assinaturas_safe: {
+        Row: {
+          created_at: string | null
+          id: string | null
+          imagem_url: string | null
+          nome: string | null
+          pmoc_id: string | null
+          tipo: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string | null
+          imagem_url?: string | null
+          nome?: string | null
+          pmoc_id?: string | null
+          tipo?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string | null
+          imagem_url?: string | null
+          nome?: string | null
+          pmoc_id?: string | null
+          tipo?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "assinaturas_pmoc_id_fkey"
+            columns: ["pmoc_id"]
+            isOneToOne: false
+            referencedRelation: "pmocs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       calc_proxima_execucao: {
