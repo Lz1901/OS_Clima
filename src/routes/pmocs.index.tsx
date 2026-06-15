@@ -26,7 +26,9 @@ import { calcNext } from "@/lib/pmoc";
 export const Route = createFileRoute("/pmocs/")({
   component: () => (
     <AppLayout>
-      <PmocsPage />
+      <RequirePermission permission="pmoc.view">
+        <PmocsPage />
+      </RequirePermission>
     </AppLayout>
   ),
 });
