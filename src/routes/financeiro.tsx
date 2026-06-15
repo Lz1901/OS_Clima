@@ -254,8 +254,6 @@ function FinanceiroPage() {
         .select("id")
         .maybeSingle();
 
-      console.log("[Financeiro][Status] Resultado:", result);
-      console.log("[Financeiro][Status] Erro:", result.error);
 
       if (result.error) throw result.error;
       if (!result.data) {
