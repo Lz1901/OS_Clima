@@ -136,12 +136,16 @@ function UnidadesPage() {
                   </div>
                 </div>
                 <div className="flex gap-1">
-                  <Button variant="ghost" size="icon" onClick={() => { setEditing(u); setOpen(true); }}>
-                    <Pencil className="h-4 w-4" />
-                  </Button>
-                  <Button variant="ghost" size="icon" onClick={() => confirm("Remover?") && remove.mutate(u.id)}>
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
+                  <PermissionGate permission="unidades.edit">
+                    <Button variant="ghost" size="icon" onClick={() => { setEditing(u); setOpen(true); }}>
+                      <Pencil className="h-4 w-4" />
+                    </Button>
+                  </PermissionGate>
+                  <PermissionGate permission="unidades.delete">
+                    <Button variant="ghost" size="icon" onClick={() => confirm("Remover?") && remove.mutate(u.id)}>
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </PermissionGate>
                 </div>
               </div>
             ))}
