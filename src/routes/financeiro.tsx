@@ -165,8 +165,6 @@ function FinanceiroPage() {
           .order("razao_social"),
       ]);
 
-      console.log("[Financeiro][fetchData] Resultado:", { transRes, catRes, cliRes });
-      console.log("[Financeiro][fetchData] Erro:", transRes.error ?? catRes.error ?? cliRes.error);
 
       if (transRes.error) throw transRes.error;
       if (catRes.error) throw catRes.error;
