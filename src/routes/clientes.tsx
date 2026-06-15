@@ -32,7 +32,9 @@ import {
 export const Route = createFileRoute("/clientes")({
   component: () => (
     <AppLayout>
-      <ClientesPage />
+      <RequirePermission permission="clientes.view">
+        <ClientesPage />
+      </RequirePermission>
     </AppLayout>
   ),
 });
