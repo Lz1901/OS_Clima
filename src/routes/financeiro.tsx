@@ -116,7 +116,7 @@ function FinanceiroPage() {
     tipo: "receita",
     categoria_id: "",
     cliente_id: "",
-    data_vencimento: new Date().toISOString().split('T')[0],
+    data_vencimento: new Date().toISOString().split("T")[0],
     status: "pendente",
   });
 
@@ -125,21 +125,10 @@ function FinanceiroPage() {
   const canEditFinance = hasPermission("financeiro.edit") || hasPermission("financeiro.manage");
   const canDeleteFinance = hasPermission("financeiro.delete") || hasPermission("financeiro.manage");
 
-  const calculateStats = (items: any[]) => {
-    const receita = items
-      .filter((t) => t.tipo === "receita" && t.status === "pago")
-      .reduce((acc, t) => acc + Number(t.valor), 0);
-    const despesa = items
-      .filter((t) => t.tipo === "despesa" && t.status === "pago")
-      .reduce((acc, t) => acc + Number(t.valor), 0);
-
-    return { receita, despesa, saldo: receita - despesa };
-  };
-
-  const applyTransactions = (items: any[]) => {
+  const applyTransactions = useCallback((items: FinancialTransaction[]) => {
     setTransactions(items);
     setStats(calculateStats(items));
-  };
+  }, []);
 
   const logDeleteStep = (message: string, payload?: unknown) => {
     if (payload !== undefined) {
@@ -149,7 +138,7 @@ function FinanceiroPage() {
     console.log(`[Financeiro][Excluir] ${message}`);
   };
 
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     if (!profile?.company_id) {
       applyTransactions([]);
       setLoading(false);
@@ -170,8 +159,16 @@ function FinanceiroPage() {
           .select("*, financial_categories(nome), clientes(razao_social)")
           .eq("company_id", profile.company_id)
           .order("data_vencimento", { ascending: false }),
-        supabase.from("financial_categories").select("*").eq("company_id", profile.company_id).order("nome"),
-        supabase.from("clientes").select("id, razao_social").eq("company_id", profile.company_id).order("razao_social"),
+        supabase
+          .from("financial_categories")
+          .select("*")
+          .eq("company_id", profile.company_id)
+          .order("nome"),
+        supabase
+          .from("clientes")
+          .select("id, razao_social")
+          .eq("company_id", profile.company_id)
+          .order("razao_social"),
       ]);
 
       console.log("[Financeiro][fetchData] Resultado:", { transRes, catRes, cliRes });
@@ -190,11 +187,11 @@ function FinanceiroPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [applyTransactions, canViewFinance, profile?.company_id]);
 
   useEffect(() => {
     fetchData();
-  }, [profile?.company_id, canViewFinance]);
+  }, [fetchData]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
