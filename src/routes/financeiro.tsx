@@ -130,13 +130,7 @@ function FinanceiroPage() {
     setStats(calculateStats(items));
   }, []);
 
-  const logDeleteStep = (message: string, payload?: unknown) => {
-    if (payload !== undefined) {
-      console.log(`[Financeiro][Excluir] ${message}`, payload);
-      return;
-    }
-    console.log(`[Financeiro][Excluir] ${message}`);
-  };
+  
 
   const fetchData = useCallback(async () => {
     if (!profile?.company_id) {
