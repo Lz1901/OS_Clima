@@ -115,9 +115,11 @@ function ClientesPage() {
         title="Clientes"
         description={`${clientes.length} cliente(s) cadastrado(s)`}
         action={
-          <Button onClick={() => { setEditing(null); setOpen(true); }}>
-            <Plus className="h-4 w-4 mr-2" /> Novo cliente
-          </Button>
+          <PermissionGate permission="clientes.create">
+            <Button onClick={() => { setEditing(null); setOpen(true); }}>
+              <Plus className="h-4 w-4 mr-2" /> Novo cliente
+            </Button>
+          </PermissionGate>
         }
       />
 
