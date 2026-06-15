@@ -90,32 +90,25 @@ export const inviteFuncionario = createServerFn({ method: "POST" })
       .eq("id", companyId)
       .maybeSingle();
 
-    // Cria um pending invite server-side. O trigger handle_new_user usa
-    // essa tabela (não a metadata enviada pelo usuário) para vincular o
-    // novo usuário à empresa correta, evitando escalonamento cross-tenant.
-    const { error: pendingErr } = await supabaseAdmin
+    // Cria um pending invite server-side com token interno (UUID).
+    // O trigger handle_new_user usa pending_invites por e-mail para vincular
+    // o novo usuário à empresa correta — mas o aceite acontece via
+    // /accept-invite, sem depender do redirect URL do Supabase Auth.
+    const { data: pending, error: pendingErr } = await supabaseAdmin
       .from("pending_invites")
       .insert({
         email: data.email.toLowerCase(),
         company_id: companyId,
         role: data.role,
         invited_by: context.userId,
-      });
-    if (pendingErr) throw new Error(pendingErr.message);
-
-    // Gera um link de convite (cria o usuário em auth.users de forma
-    // pendente) e envia via Resend com template próprio.
-    const redirectTo = `${data.appUrl.replace(/\/$/, "")}/reset-password`;
-    const { data: linkData, error: linkErr } =
-      await supabaseAdmin.auth.admin.generateLink({
-        type: "invite",
-        email: data.email.toLowerCase(),
-        options: { redirectTo, data: { nome: data.nome } },
-      });
-
-    if (linkErr || !linkData?.properties?.action_link || !linkData.user) {
-      throw new Error(linkErr?.message ?? "Erro ao gerar link de convite");
+      })
+      .select("token")
+      .single();
+    if (pendingErr || !pending) {
+      throw new Error(pendingErr?.message ?? "Erro ao criar convite");
     }
+
+    const inviteLink = `${data.appUrl.replace(/\/$/, "")}/accept-invite?token=${pending.token}`;
 
     const { sendEmail, inviteTemplate } = await import("@/lib/email.server");
     const emailResult = await sendEmail({
@@ -124,18 +117,17 @@ export const inviteFuncionario = createServerFn({ method: "POST" })
       html: inviteTemplate({
         nome: data.nome,
         empresa: company?.nome ?? "OS Clima",
-        link: linkData.properties.action_link,
+        link: inviteLink,
       }),
     });
 
-    // Fallback: se o envio falhar, o usuário já foi criado e o invite
-    // existe — retornamos o link para o admin compartilhar manualmente.
+    // Fallback: se o envio falhar, o convite continua válido no banco e
+    // retornamos o link para o admin compartilhar manualmente.
     return {
       success: true,
-      userId: linkData.user.id,
       emailSent: emailResult.ok,
       emailError: emailResult.ok ? null : emailResult.error,
-      inviteLink: emailResult.ok ? null : linkData.properties.action_link,
+      inviteLink: emailResult.ok ? null : inviteLink,
     };
   });
 

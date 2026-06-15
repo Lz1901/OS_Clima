@@ -578,6 +578,7 @@ export type Database = {
           id: string
           invited_by: string | null
           role: Database["public"]["Enums"]["app_role"]
+          token: string
           used_at: string | null
         }
         Insert: {
@@ -588,6 +589,7 @@ export type Database = {
           id?: string
           invited_by?: string | null
           role: Database["public"]["Enums"]["app_role"]
+          token?: string
           used_at?: string | null
         }
         Update: {
@@ -598,6 +600,7 @@ export type Database = {
           id?: string
           invited_by?: string | null
           role?: Database["public"]["Enums"]["app_role"]
+          token?: string
           used_at?: string | null
         }
         Relationships: [
