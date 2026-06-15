@@ -379,7 +379,7 @@ function FinanceiroPage() {
           </div>
           <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogTrigger asChild>
-              <Button className="w-full md:w-auto">
+              <Button className="w-full md:w-auto" disabled={!canCreateFinance}>
                 <Plus className="h-4 w-4 mr-2" /> Nova Transação
               </Button>
             </DialogTrigger>
@@ -505,6 +505,13 @@ function FinanceiroPage() {
           </Card>
         </div>
 
+        {!canViewFinance ? (
+          <Card className="p-8 text-center">
+            <AlertCircle className="h-10 w-10 mx-auto text-muted-foreground mb-3" />
+            <p className="font-medium">Acesso financeiro indisponível</p>
+            <p className="text-sm text-muted-foreground mt-1">Seu cargo não permite visualizar transações financeiras.</p>
+          </Card>
+        ) : (
         <Card>
           <CardHeader>
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
@@ -594,50 +601,54 @@ function FinanceiroPage() {
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex items-center justify-end gap-2">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            disabled={deleting}
-                            onClick={() => {
-                              console.log("Iniciando exclusão");
-                              console.log("ID da transação:", t.id);
-                              console.log("Usuário:", user?.id);
-                              handleDelete(t.id, "botao-teste-direto");
-                            }}
-                          >
-                            Excluir esta transação agora
-                          </Button>
+                          {canDeleteFinance && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              disabled={deleting}
+                              onClick={() => {
+                                console.log("Iniciando exclusão");
+                                console.log("ID da transação:", t.id);
+                                console.log("Usuário:", user?.id);
+                                handleDelete(t.id, "botao-teste-direto");
+                              }}
+                            >
+                              Excluir esta transação agora
+                            </Button>
+                          )}
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="icon" disabled={deleting}>
+                              <Button variant="ghost" size="icon" disabled={deleting || (!canEditFinance && !canDeleteFinance)}>
                                 <MoreVertical className="h-4 w-4" />
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
-                              {t.status !== 'pago' && (
+                              {canEditFinance && t.status !== 'pago' && (
                                 <DropdownMenuItem onClick={() => handleStatusUpdate(t.id, 'pago')}>
                                   Marcar como Pago
                                 </DropdownMenuItem>
                               )}
-                              {t.status !== 'pendente' && (
+                              {canEditFinance && t.status !== 'pendente' && (
                                 <DropdownMenuItem onClick={() => handleStatusUpdate(t.id, 'pendente')}>
                                   Marcar como Pendente
                                 </DropdownMenuItem>
                               )}
-                              <DropdownMenuItem
-                                className="text-destructive focus:text-destructive"
-                                onSelect={(e) => {
-                                  e.preventDefault();
-                                  console.log("Iniciando exclusão");
-                                  console.log("ID da transação:", t.id);
-                                  console.log("Usuário:", user?.id);
-                                  console.log("Resultado:", { origem: "menu", transacao: t });
-                                  console.log("Erro:", null);
-                                  setPendingDelete(t);
-                                }}
-                              >
-                                Excluir
-                              </DropdownMenuItem>
+                              {canDeleteFinance && (
+                                <DropdownMenuItem
+                                  className="text-destructive focus:text-destructive"
+                                  onSelect={(e) => {
+                                    e.preventDefault();
+                                    console.log("Iniciando exclusão");
+                                    console.log("ID da transação:", t.id);
+                                    console.log("Usuário:", user?.id);
+                                    console.log("Resultado:", { origem: "menu", transacao: t });
+                                    console.log("Erro:", null);
+                                    setPendingDelete(t);
+                                  }}
+                                >
+                                  Excluir
+                                </DropdownMenuItem>
+                              )}
                             </DropdownMenuContent>
                           </DropdownMenu>
                         </div>
@@ -649,6 +660,7 @@ function FinanceiroPage() {
             </Table>
           </CardContent>
         </Card>
+        )}
 
         <AlertDialog
           open={!!pendingDelete}
