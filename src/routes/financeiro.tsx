@@ -267,115 +267,39 @@ function FinanceiroPage() {
     }
   };
 
-  const handleDelete = async (id: string, origem = "confirmacao") => {
-    console.log("Iniciando exclusão");
-    console.log("ID da transação:", id);
-    console.log("Usuário:", user?.id);
-    logDeleteStep("Origem do clique", origem);
-    logDeleteStep("Profile", profile);
-    logDeleteStep("Permissões financeiras", {
-      view: hasPermission("financeiro.view"),
-      create: hasPermission("financeiro.create"),
-      edit: hasPermission("financeiro.edit"),
-      delete: hasPermission("financeiro.delete"),
-      manage: hasPermission("financeiro.manage"),
-    });
-
-    if (!id) {
-      const error = new Error("ID da transação não foi recebido.");
-      console.log("Erro:", error);
-      toast.error(error.message);
-      return;
-    }
-
-    if (!profile?.company_id) {
-      const error = new Error(
-        "Empresa do usuário não carregada. Recarregue a página e tente novamente.",
-      );
-      console.log("Erro:", error);
-      toast.error(error.message);
-      return;
-    }
-
+  const handleDelete = async (id: string) => {
+    if (!id || !profile?.company_id) return;
     if (!canDeleteFinance) {
-      const error = new Error("Você não tem permissão para excluir transações financeiras.");
-      console.log("Erro:", error);
-      toast.error(error.message);
+      toast.error("Você não tem permissão para excluir transações financeiras.");
       return;
     }
 
     setDeleting(true);
-    let result: {
-      data: { id: string; descricao: string } | null;
-      error: unknown;
-    } | null = null;
-    let error: unknown = null;
     try {
-      const userResult = await supabase.auth.getUser();
-      console.log("Usuário:", userResult.data.user?.id);
-      console.log("Resultado:", userResult);
-      console.log("Erro:", userResult.error);
-      if (userResult.error || !userResult.data.user) {
-        throw userResult.error ?? new Error("Usuário não autenticado para excluir transações.");
-      }
-
-      const existsResult = await supabase
-        .from("financial_transactions")
-        .select("id, company_id, descricao, valor, status")
-        .eq("id", id)
-        .maybeSingle();
-      console.log("Resultado:", existsResult);
-      console.log("Erro:", existsResult.error);
-      if (existsResult.error) throw existsResult.error;
-      if (!existsResult.data) {
-        throw new Error("Transação não encontrada ou sem permissão de visualização.");
-      }
-
-      result = await supabase
+      const { data, error } = await supabase
         .from("financial_transactions")
         .delete()
         .eq("id", id)
         .eq("company_id", profile.company_id)
-        .select("id, descricao")
-        .maybeSingle();
-      error = result.error;
-      console.log("Resultado:", result);
-      console.log("Erro:", error);
-      if (error) throw error;
-      if (!result.data) {
-        throw new Error(
-          "A exclusão não foi aplicada. Verifique permissão de exclusão ou se o registro ainda existe.",
-        );
-      }
-
-      const verifyResult = await supabase
-        .from("financial_transactions")
         .select("id")
-        .eq("id", id)
         .maybeSingle();
-      console.log("Resultado:", verifyResult);
-      console.log("Erro:", verifyResult.error);
-      if (verifyResult.error) throw verifyResult.error;
-      if (verifyResult.data) {
-        throw new Error(
-          "O banco retornou sucesso, mas o registro continua existindo após a exclusão.",
-        );
+
+      if (error) throw error;
+      if (!data) {
+        throw new Error("A exclusão não foi aplicada. Verifique sua permissão.");
       }
 
-      const nextTransactions = transactions.filter((t) => t.id !== id);
-      applyTransactions(nextTransactions);
+      applyTransactions(transactions.filter((t) => t.id !== id));
       toast.success("Transação excluída");
-      await fetchData();
       queryClient.invalidateQueries({ queryKey: ["dashboard-stats"] });
     } catch (error: unknown) {
-      console.log("Resultado:", result);
-      console.log("Erro:", error);
       toast.error(getErrorMessage(error, "Falha ao excluir transação"));
     } finally {
       setDeleting(false);
       setPendingDelete(null);
     }
   };
+
 
   const filteredTransactions = useMemo(() => {
     const term = searchTerm.trim().toLowerCase();
