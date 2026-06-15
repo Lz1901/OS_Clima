@@ -13,7 +13,9 @@ import { formatDateTime } from "@/lib/format";
 export const Route = createFileRoute("/logs")({
   component: () => (
     <AppLayout>
-      <LogsPage />
+      <RequirePermission permission={["auditoria.view", "configuracoes.manage"]}>
+        <LogsPage />
+      </RequirePermission>
     </AppLayout>
   ),
 });
