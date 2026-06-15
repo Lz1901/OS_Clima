@@ -28,7 +28,9 @@ import { equipamentoTipoLabel, statusLabel } from "@/lib/format";
 export const Route = createFileRoute("/equipamentos")({
   component: () => (
     <AppLayout>
-      <EquipamentosPage />
+      <RequirePermission permission="equipamentos.view">
+        <EquipamentosPage />
+      </RequirePermission>
     </AppLayout>
   ),
 });
