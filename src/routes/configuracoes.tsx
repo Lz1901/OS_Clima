@@ -107,9 +107,11 @@ function Config() {
           </div>
         </div>
         <div className="flex justify-end mt-6">
-          <Button onClick={() => save.mutate()} disabled={save.isPending}>
-            {save.isPending ? "Salvando..." : "Salvar alterações"}
-          </Button>
+          <PermissionGate permission="configuracoes.edit">
+            <Button onClick={() => save.mutate()} disabled={save.isPending}>
+              {save.isPending ? "Salvando..." : "Salvar alterações"}
+            </Button>
+          </PermissionGate>
         </div>
       </Card>
     </>
