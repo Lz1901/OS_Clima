@@ -481,8 +481,8 @@ function FinanceiroPage() {
           <CardHeader>
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
               <CardTitle>Últimas Transações</CardTitle>
-              <div className="flex w-full md:w-auto gap-2">
-                <div className="relative flex-1 md:w-64">
+              <div className="grid w-full gap-2 md:w-auto md:grid-cols-[16rem_10rem_10rem]">
+                <div className="relative">
                   <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                   <Input
                     placeholder="Buscar transação..."
@@ -491,9 +491,28 @@ function FinanceiroPage() {
                     onChange={(e) => setSearchTerm(e.target.value)}
                   />
                 </div>
-                <Button variant="outline" size="icon">
-                  <Filter className="h-4 w-4" />
-                </Button>
+                <Select value={statusFilter} onValueChange={setStatusFilter}>
+                  <SelectTrigger>
+                    <Filter className="h-4 w-4 mr-2" />
+                    <SelectValue placeholder="Status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="todos">Todos</SelectItem>
+                    <SelectItem value="pendente">Pendente</SelectItem>
+                    <SelectItem value="pago">Pago</SelectItem>
+                    <SelectItem value="cancelado">Cancelado</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Select value={typeFilter} onValueChange={setTypeFilter}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Tipo" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="todos">Receitas e despesas</SelectItem>
+                    <SelectItem value="receita">Receitas</SelectItem>
+                    <SelectItem value="despesa">Despesas</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
             </div>
           </CardHeader>
@@ -546,31 +565,54 @@ function FinanceiroPage() {
                         )}
                       </TableCell>
                       <TableCell className="text-right">
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon">
-                              <MoreVertical className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            {t.status !== 'pago' && (
-                              <DropdownMenuItem onClick={() => handleStatusUpdate(t.id, 'pago')}>
-                                Marcar como Pago
+                        <div className="flex items-center justify-end gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            disabled={deleting}
+                            onClick={() => {
+                              console.log("Iniciando exclusão");
+                              console.log("ID da transação:", t.id);
+                              console.log("Usuário:", user?.id);
+                              handleDelete(t.id, "botao-teste-direto");
+                            }}
+                          >
+                            Excluir esta transação agora
+                          </Button>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="icon" disabled={deleting}>
+                                <MoreVertical className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              {t.status !== 'pago' && (
+                                <DropdownMenuItem onClick={() => handleStatusUpdate(t.id, 'pago')}>
+                                  Marcar como Pago
+                                </DropdownMenuItem>
+                              )}
+                              {t.status !== 'pendente' && (
+                                <DropdownMenuItem onClick={() => handleStatusUpdate(t.id, 'pendente')}>
+                                  Marcar como Pendente
+                                </DropdownMenuItem>
+                              )}
+                              <DropdownMenuItem
+                                className="text-destructive focus:text-destructive"
+                                onSelect={(e) => {
+                                  e.preventDefault();
+                                  console.log("Iniciando exclusão");
+                                  console.log("ID da transação:", t.id);
+                                  console.log("Usuário:", user?.id);
+                                  console.log("Resultado:", { origem: "menu", transacao: t });
+                                  console.log("Erro:", null);
+                                  setPendingDelete(t);
+                                }}
+                              >
+                                Excluir
                               </DropdownMenuItem>
-                            )}
-                            {t.status !== 'pendente' && (
-                              <DropdownMenuItem onClick={() => handleStatusUpdate(t.id, 'pendente')}>
-                                Marcar como Pendente
-                              </DropdownMenuItem>
-                            )}
-                            <DropdownMenuItem
-                              className="text-red-600 focus:text-red-600"
-                              onSelect={(e) => { e.preventDefault(); setPendingDelete(t); }}
-                            >
-                              Excluir
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))
