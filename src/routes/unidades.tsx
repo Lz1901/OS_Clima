@@ -23,7 +23,9 @@ import { unidadeTipoLabel } from "@/lib/format";
 export const Route = createFileRoute("/unidades")({
   component: () => (
     <AppLayout>
-      <UnidadesPage />
+      <RequirePermission permission="unidades.view">
+        <UnidadesPage />
+      </RequirePermission>
     </AppLayout>
   ),
 });
