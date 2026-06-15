@@ -645,8 +645,6 @@ function FinanceiroPage() {
         <AlertDialog
           open={!!pendingDelete}
           onOpenChange={(open) => {
-            console.log("[Financeiro][AlertDialog] Resultado:", { open, pendingDelete });
-            console.log("[Financeiro][AlertDialog] Erro:", null);
             if (!open && !deleting) setPendingDelete(null);
           }}
         >
@@ -674,12 +672,7 @@ function FinanceiroPage() {
                 disabled={deleting}
                 onClick={(e) => {
                   e.preventDefault();
-                  console.log("Iniciando exclusão");
-                  console.log("ID da transação:", pendingDelete?.id);
-                  console.log("Usuário:", user?.id);
-                  console.log("Resultado:", { origem: "alert-dialog", pendingDelete });
-                  console.log("Erro:", null);
-                  if (pendingDelete) handleDelete(pendingDelete.id, "alert-dialog");
+                  if (pendingDelete) handleDelete(pendingDelete.id);
                 }}
                 className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
               >
