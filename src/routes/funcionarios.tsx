@@ -272,9 +272,17 @@ function InviteDialog({ open, onClose }: { open: boolean; onClose: () => void })
   const [role, setRole] = useState<Role>("tecnico");
 
   const mut = useMutation({
-    mutationFn: () => inviteFn({ data: { nome, email, role } }),
-    onSuccess: () => {
-      toast.success("Convite enviado por e-mail");
+    mutationFn: () =>
+      inviteFn({ data: { nome, email, role, appUrl: window.location.origin } }),
+    onSuccess: (res: any) => {
+      if (res?.emailSent === false && res?.inviteLink) {
+        toast.warning(
+          "Usuário criado, mas o envio do e-mail falhou. Compartilhe o link manualmente.",
+          { duration: 10000, description: res.inviteLink }
+        );
+      } else {
+        toast.success("Convite enviado por e-mail");
+      }
       qc.invalidateQueries({ queryKey: ["funcionarios"] });
       setNome("");
       setEmail("");
