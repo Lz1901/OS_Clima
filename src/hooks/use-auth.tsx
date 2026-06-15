@@ -100,7 +100,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const hasPermission = (permissionId: string) => {
     if (profile?.is_super_admin) return true;
-    return permissions.includes(permissionId);
+    if (permissions.includes(permissionId)) return true;
+    // Compatibilidade com permissões legadas: *.manage concede acesso total ao módulo.
+    const dot = permissionId.indexOf(".");
+    if (dot > 0) {
+      const modulo = permissionId.slice(0, dot);
+      const action = permissionId.slice(dot + 1);
+      if (action !== "manage" && permissions.includes(`${modulo}.manage`)) return true;
+    }
+    return false;
   };
 
   const refreshProfile = async () => {
