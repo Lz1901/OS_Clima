@@ -301,7 +301,9 @@ function FinanceiroPage() {
     }
 
     if (!profile?.company_id) {
-      const error = new Error("Empresa do usuário não carregada. Recarregue a página e tente novamente.");
+      const error = new Error(
+        "Empresa do usuário não carregada. Recarregue a página e tente novamente.",
+      );
       console.log("Erro:", error);
       toast.error(error.message);
       return;
@@ -353,7 +355,9 @@ function FinanceiroPage() {
       console.log("Erro:", error);
       if (error) throw error;
       if (!result.data) {
-        throw new Error("A exclusão não foi aplicada. Verifique permissão de exclusão ou se o registro ainda existe.");
+        throw new Error(
+          "A exclusão não foi aplicada. Verifique permissão de exclusão ou se o registro ainda existe.",
+        );
       }
 
       const verifyResult = await supabase
@@ -365,7 +369,9 @@ function FinanceiroPage() {
       console.log("Erro:", verifyResult.error);
       if (verifyResult.error) throw verifyResult.error;
       if (verifyResult.data) {
-        throw new Error("O banco retornou sucesso, mas o registro continua existindo após a exclusão.");
+        throw new Error(
+          "O banco retornou sucesso, mas o registro continua existindo após a exclusão.",
+        );
       }
 
       const nextTransactions = transactions.filter((t) => t.id !== id);
@@ -386,14 +392,19 @@ function FinanceiroPage() {
   const filteredTransactions = useMemo(() => {
     const term = searchTerm.trim().toLowerCase();
     return transactions.filter((t) => {
-      const matchesSearch = !term || [
-        t.descricao,
-        t.financial_categories?.nome,
-        t.clientes?.razao_social,
-        t.status,
-        t.tipo,
-        String(t.valor ?? ""),
-      ].join(" ").toLowerCase().includes(term);
+      const matchesSearch =
+        !term ||
+        [
+          t.descricao,
+          t.financial_categories?.nome,
+          t.clientes?.razao_social,
+          t.status,
+          t.tipo,
+          String(t.valor ?? ""),
+        ]
+          .join(" ")
+          .toLowerCase()
+          .includes(term);
       const matchesStatus = statusFilter === "todos" || t.status === statusFilter;
       const matchesType = typeFilter === "todos" || t.tipo === typeFilter;
       return matchesSearch && matchesStatus && matchesType;
@@ -406,7 +417,9 @@ function FinanceiroPage() {
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <div>
             <h1 className="text-3xl font-bold tracking-tight">Financeiro</h1>
-            <p className="text-muted-foreground">Gestão de fluxo de caixa e contas a pagar/receber.</p>
+            <p className="text-muted-foreground">
+              Gestão de fluxo de caixa e contas a pagar/receber.
+            </p>
           </div>
           <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogTrigger asChild>
@@ -421,9 +434,9 @@ function FinanceiroPage() {
               <form onSubmit={handleSubmit} className="space-y-4 py-4">
                 <div className="grid gap-2">
                   <Label>Tipo</Label>
-                  <Select 
-                    value={formData.tipo} 
-                    onValueChange={(v) => setFormData({...formData, tipo: v, categoria_id: ""})}
+                  <Select
+                    value={formData.tipo}
+                    onValueChange={(v) => setFormData({ ...formData, tipo: v, categoria_id: "" })}
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Selecione o tipo" />
@@ -436,71 +449,81 @@ function FinanceiroPage() {
                 </div>
                 <div className="grid gap-2">
                   <Label>Descrição</Label>
-                  <Input 
-                    required 
-                    placeholder="Ex: Contrato Mensal PMOC" 
+                  <Input
+                    required
+                    placeholder="Ex: Contrato Mensal PMOC"
                     value={formData.descricao}
-                    onChange={(e) => setFormData({...formData, descricao: e.target.value})}
+                    onChange={(e) => setFormData({ ...formData, descricao: e.target.value })}
                   />
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="grid gap-2">
                     <Label>Valor (R$)</Label>
-                    <Input 
-                      required 
-                      type="number" 
-                      step="0.01" 
-                      placeholder="0,00" 
+                    <Input
+                      required
+                      type="number"
+                      step="0.01"
+                      placeholder="0,00"
                       value={formData.valor}
-                      onChange={(e) => setFormData({...formData, valor: e.target.value})}
+                      onChange={(e) => setFormData({ ...formData, valor: e.target.value })}
                     />
                   </div>
                   <div className="grid gap-2">
                     <Label>Vencimento</Label>
-                    <Input 
-                      required 
-                      type="date" 
+                    <Input
+                      required
+                      type="date"
                       value={formData.data_vencimento}
-                      onChange={(e) => setFormData({...formData, data_vencimento: e.target.value})}
+                      onChange={(e) =>
+                        setFormData({ ...formData, data_vencimento: e.target.value })
+                      }
                     />
                   </div>
                 </div>
                 <div className="grid gap-2">
                   <Label>Categoria</Label>
-                  <Select 
+                  <Select
                     required
-                    value={formData.categoria_id} 
-                    onValueChange={(v) => setFormData({...formData, categoria_id: v})}
+                    value={formData.categoria_id}
+                    onValueChange={(v) => setFormData({ ...formData, categoria_id: v })}
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Selecione uma categoria" />
                     </SelectTrigger>
                     <SelectContent>
-                      {categories.filter(c => c.tipo === formData.tipo).map(cat => (
-                        <SelectItem key={cat.id} value={cat.id}>{cat.nome}</SelectItem>
-                      ))}
+                      {categories
+                        .filter((c) => c.tipo === formData.tipo)
+                        .map((cat) => (
+                          <SelectItem key={cat.id} value={cat.id}>
+                            {cat.nome}
+                          </SelectItem>
+                        ))}
                     </SelectContent>
                   </Select>
                 </div>
-                {formData.tipo === 'receita' && (
+                {formData.tipo === "receita" && (
                   <div className="grid gap-2">
                     <Label>Cliente (Opcional)</Label>
-                    <Select 
-                      value={formData.cliente_id} 
-                      onValueChange={(v) => setFormData({...formData, cliente_id: v})}
+                    <Select
+                      value={formData.cliente_id}
+                      onValueChange={(v) => setFormData({ ...formData, cliente_id: v })}
                     >
                       <SelectTrigger>
                         <SelectValue placeholder="Vincular a um cliente" />
                       </SelectTrigger>
                       <SelectContent>
-                        {clientes.map(cli => (
-                          <SelectItem key={cli.id} value={cli.id}>{cli.razao_social}</SelectItem>
+                        {clientes.map((cli) => (
+                          <SelectItem key={cli.id} value={cli.id}>
+                            {cli.razao_social}
+                          </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
                   </div>
                 )}
-                <Button type="submit" className="w-full">Salvar</Button>
+                <Button type="submit" className="w-full">
+                  Salvar
+                </Button>
               </form>
             </DialogContent>
           </Dialog>
@@ -509,16 +532,22 @@ function FinanceiroPage() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <Card className="bg-green-50/50 border-green-100">
             <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-green-600">Total Receitas (Pagas)</CardTitle>
+              <CardTitle className="text-sm font-medium text-green-600">
+                Total Receitas (Pagas)
+              </CardTitle>
               <ArrowUpCircle className="h-4 w-4 text-green-600" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-green-700">{formatCurrency(stats.receita)}</div>
+              <div className="text-2xl font-bold text-green-700">
+                {formatCurrency(stats.receita)}
+              </div>
             </CardContent>
           </Card>
           <Card className="bg-red-50/50 border-red-100">
             <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-red-600">Total Despesas (Pagas)</CardTitle>
+              <CardTitle className="text-sm font-medium text-red-600">
+                Total Despesas (Pagas)
+              </CardTitle>
               <ArrowDownCircle className="h-4 w-4 text-red-600" />
             </CardHeader>
             <CardContent>
@@ -540,157 +569,185 @@ function FinanceiroPage() {
           <Card className="p-8 text-center">
             <AlertCircle className="h-10 w-10 mx-auto text-muted-foreground mb-3" />
             <p className="font-medium">Acesso financeiro indisponível</p>
-            <p className="text-sm text-muted-foreground mt-1">Seu cargo não permite visualizar transações financeiras.</p>
+            <p className="text-sm text-muted-foreground mt-1">
+              Seu cargo não permite visualizar transações financeiras.
+            </p>
           </Card>
         ) : (
-        <Card>
-          <CardHeader>
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-              <CardTitle>Últimas Transações</CardTitle>
-              <div className="grid w-full gap-2 md:w-auto md:grid-cols-[16rem_10rem_10rem]">
-                <div className="relative">
-                  <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    placeholder="Buscar transação..."
-                    className="pl-8"
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                  />
+          <Card>
+            <CardHeader>
+              <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                <CardTitle>Últimas Transações</CardTitle>
+                <div className="grid w-full gap-2 md:w-auto md:grid-cols-[16rem_10rem_10rem]">
+                  <div className="relative">
+                    <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      placeholder="Buscar transação..."
+                      className="pl-8"
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                    />
+                  </div>
+                  <Select value={statusFilter} onValueChange={setStatusFilter}>
+                    <SelectTrigger>
+                      <Filter className="h-4 w-4 mr-2" />
+                      <SelectValue placeholder="Status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="todos">Todos</SelectItem>
+                      <SelectItem value="pendente">Pendente</SelectItem>
+                      <SelectItem value="pago">Pago</SelectItem>
+                      <SelectItem value="cancelado">Cancelado</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <Select value={typeFilter} onValueChange={setTypeFilter}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Tipo" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="todos">Receitas e despesas</SelectItem>
+                      <SelectItem value="receita">Receitas</SelectItem>
+                      <SelectItem value="despesa">Despesas</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
-                <Select value={statusFilter} onValueChange={setStatusFilter}>
-                  <SelectTrigger>
-                    <Filter className="h-4 w-4 mr-2" />
-                    <SelectValue placeholder="Status" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="todos">Todos</SelectItem>
-                    <SelectItem value="pendente">Pendente</SelectItem>
-                    <SelectItem value="pago">Pago</SelectItem>
-                    <SelectItem value="cancelado">Cancelado</SelectItem>
-                  </SelectContent>
-                </Select>
-                <Select value={typeFilter} onValueChange={setTypeFilter}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Tipo" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="todos">Receitas e despesas</SelectItem>
-                    <SelectItem value="receita">Receitas</SelectItem>
-                    <SelectItem value="despesa">Despesas</SelectItem>
-                  </SelectContent>
-                </Select>
               </div>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Vencimento</TableHead>
-                  <TableHead>Descrição</TableHead>
-                  <TableHead>Categoria</TableHead>
-                  <TableHead>Valor</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="text-right">Ações</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {loading ? (
-                  <TableRow><TableCell colSpan={6} className="text-center py-8">Carregando...</TableCell></TableRow>
-                ) : filteredTransactions.length === 0 ? (
-                  <TableRow><TableCell colSpan={6} className="text-center py-8 text-muted-foreground">Nenhuma transação encontrada.</TableCell></TableRow>
-                ) : (
-                  filteredTransactions.map((t) => (
-                    <TableRow key={t.id}>
-                      <TableCell className="font-medium">{formatDate(t.data_vencimento)}</TableCell>
-                      <TableCell>
-                        <div className="flex flex-col">
-                          <span>{t.descricao}</span>
-                          <span className="text-xs text-muted-foreground">{t.clientes?.razao_social}</span>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant="outline">{t.financial_categories?.nome}</Badge>
-                      </TableCell>
-                      <TableCell className={t.tipo === 'receita' ? 'text-green-600 font-semibold' : 'text-red-600 font-semibold'}>
-                        {t.tipo === 'receita' ? '+' : '-'} {formatCurrency(t.valor)}
-                      </TableCell>
-                      <TableCell>
-                        {t.status === 'pago' ? (
-                          <Badge className="bg-green-100 text-green-700 hover:bg-green-100 border-none">
-                            <CheckCircle2 className="h-3 w-3 mr-1" /> Pago
-                          </Badge>
-                        ) : t.status === 'pendente' ? (
-                          <Badge className="bg-yellow-100 text-yellow-700 hover:bg-yellow-100 border-none">
-                            <Clock className="h-3 w-3 mr-1" /> Pendente
-                          </Badge>
-                        ) : (
-                          <Badge className="bg-gray-100 text-gray-700 hover:bg-gray-100 border-none">
-                            <AlertCircle className="h-3 w-3 mr-1" /> Cancelado
-                          </Badge>
-                        )}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex items-center justify-end gap-2">
-                          {canDeleteFinance && (
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              disabled={deleting}
-                              onClick={() => {
-                                console.log("Iniciando exclusão");
-                                console.log("ID da transação:", t.id);
-                                console.log("Usuário:", user?.id);
-                                handleDelete(t.id, "botao-teste-direto");
-                              }}
-                            >
-                              Excluir esta transação agora
-                            </Button>
-                          )}
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="icon" disabled={deleting || (!canEditFinance && !canDeleteFinance)}>
-                                <MoreVertical className="h-4 w-4" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              {canEditFinance && t.status !== 'pago' && (
-                                <DropdownMenuItem onClick={() => handleStatusUpdate(t.id, 'pago')}>
-                                  Marcar como Pago
-                                </DropdownMenuItem>
-                              )}
-                              {canEditFinance && t.status !== 'pendente' && (
-                                <DropdownMenuItem onClick={() => handleStatusUpdate(t.id, 'pendente')}>
-                                  Marcar como Pendente
-                                </DropdownMenuItem>
-                              )}
-                              {canDeleteFinance && (
-                                <DropdownMenuItem
-                                  className="text-destructive focus:text-destructive"
-                                  onSelect={(e) => {
-                                    e.preventDefault();
-                                    console.log("Iniciando exclusão");
-                                    console.log("ID da transação:", t.id);
-                                    console.log("Usuário:", user?.id);
-                                    console.log("Resultado:", { origem: "menu", transacao: t });
-                                    console.log("Erro:", null);
-                                    setPendingDelete(t);
-                                  }}
-                                >
-                                  Excluir
-                                </DropdownMenuItem>
-                              )}
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </div>
+            </CardHeader>
+            <CardContent>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Vencimento</TableHead>
+                    <TableHead>Descrição</TableHead>
+                    <TableHead>Categoria</TableHead>
+                    <TableHead>Valor</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead className="text-right">Ações</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {loading ? (
+                    <TableRow>
+                      <TableCell colSpan={6} className="text-center py-8">
+                        Carregando...
                       </TableCell>
                     </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          </CardContent>
-        </Card>
+                  ) : filteredTransactions.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                        Nenhuma transação encontrada.
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    filteredTransactions.map((t) => (
+                      <TableRow key={t.id}>
+                        <TableCell className="font-medium">
+                          {formatDate(t.data_vencimento)}
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex flex-col">
+                            <span>{t.descricao}</span>
+                            <span className="text-xs text-muted-foreground">
+                              {t.clientes?.razao_social}
+                            </span>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant="outline">{t.financial_categories?.nome}</Badge>
+                        </TableCell>
+                        <TableCell
+                          className={
+                            t.tipo === "receita"
+                              ? "text-green-600 font-semibold"
+                              : "text-red-600 font-semibold"
+                          }
+                        >
+                          {t.tipo === "receita" ? "+" : "-"} {formatCurrency(t.valor)}
+                        </TableCell>
+                        <TableCell>
+                          {t.status === "pago" ? (
+                            <Badge className="bg-green-100 text-green-700 hover:bg-green-100 border-none">
+                              <CheckCircle2 className="h-3 w-3 mr-1" /> Pago
+                            </Badge>
+                          ) : t.status === "pendente" ? (
+                            <Badge className="bg-yellow-100 text-yellow-700 hover:bg-yellow-100 border-none">
+                              <Clock className="h-3 w-3 mr-1" /> Pendente
+                            </Badge>
+                          ) : (
+                            <Badge className="bg-gray-100 text-gray-700 hover:bg-gray-100 border-none">
+                              <AlertCircle className="h-3 w-3 mr-1" /> Cancelado
+                            </Badge>
+                          )}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex items-center justify-end gap-2">
+                            {canDeleteFinance && (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                disabled={deleting}
+                                onClick={() => {
+                                  console.log("Iniciando exclusão");
+                                  console.log("ID da transação:", t.id);
+                                  console.log("Usuário:", user?.id);
+                                  handleDelete(t.id, "botao-teste-direto");
+                                }}
+                              >
+                                Excluir esta transação agora
+                              </Button>
+                            )}
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  disabled={deleting || (!canEditFinance && !canDeleteFinance)}
+                                >
+                                  <MoreVertical className="h-4 w-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                {canEditFinance && t.status !== "pago" && (
+                                  <DropdownMenuItem
+                                    onClick={() => handleStatusUpdate(t.id, "pago")}
+                                  >
+                                    Marcar como Pago
+                                  </DropdownMenuItem>
+                                )}
+                                {canEditFinance && t.status !== "pendente" && (
+                                  <DropdownMenuItem
+                                    onClick={() => handleStatusUpdate(t.id, "pendente")}
+                                  >
+                                    Marcar como Pendente
+                                  </DropdownMenuItem>
+                                )}
+                                {canDeleteFinance && (
+                                  <DropdownMenuItem
+                                    className="text-destructive focus:text-destructive"
+                                    onSelect={(e) => {
+                                      e.preventDefault();
+                                      console.log("Iniciando exclusão");
+                                      console.log("ID da transação:", t.id);
+                                      console.log("Usuário:", user?.id);
+                                      console.log("Resultado:", { origem: "menu", transacao: t });
+                                      console.log("Erro:", null);
+                                      setPendingDelete(t);
+                                    }}
+                                  >
+                                    Excluir
+                                  </DropdownMenuItem>
+                                )}
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
         )}
 
         <AlertDialog
@@ -709,8 +766,12 @@ function FinanceiroPage() {
                   <>
                     Tem certeza que deseja excluir <strong>{pendingDelete.descricao}</strong>
                     {pendingDelete.valor && (
-                      <> no valor de <strong>{formatCurrency(pendingDelete.valor)}</strong></>
-                    )}? Esta ação não pode ser desfeita.
+                      <>
+                        {" "}
+                        no valor de <strong>{formatCurrency(pendingDelete.valor)}</strong>
+                      </>
+                    )}
+                    ? Esta ação não pode ser desfeita.
                   </>
                 )}
               </AlertDialogDescription>
