@@ -593,21 +593,6 @@ function FinanceiroPage() {
                         </TableCell>
                         <TableCell className="text-right">
                           <div className="flex items-center justify-end gap-2">
-                            {canDeleteFinance && (
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                disabled={deleting}
-                                onClick={() => {
-                                  console.log("Iniciando exclusão");
-                                  console.log("ID da transação:", t.id);
-                                  console.log("Usuário:", user?.id);
-                                  handleDelete(t.id, "botao-teste-direto");
-                                }}
-                              >
-                                Excluir esta transação agora
-                              </Button>
-                            )}
                             <DropdownMenu>
                               <DropdownMenuTrigger asChild>
                                 <Button
@@ -638,11 +623,6 @@ function FinanceiroPage() {
                                     className="text-destructive focus:text-destructive"
                                     onSelect={(e) => {
                                       e.preventDefault();
-                                      console.log("Iniciando exclusão");
-                                      console.log("ID da transação:", t.id);
-                                      console.log("Usuário:", user?.id);
-                                      console.log("Resultado:", { origem: "menu", transacao: t });
-                                      console.log("Erro:", null);
                                       setPendingDelete(t);
                                     }}
                                   >
