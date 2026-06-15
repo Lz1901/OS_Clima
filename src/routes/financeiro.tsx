@@ -92,11 +92,7 @@ function getErrorMessage(error: unknown, fallback: string) {
 }
 
 export const Route = createFileRoute("/financeiro")({
-  component: () => (
-    <RequirePermission permission={["financeiro.view", "financeiro.manage"]}>
-      <FinanceiroPage />
-    </RequirePermission>
-  ),
+  component: FinanceiroPage,
 });
 
 function FinanceiroPage() {
