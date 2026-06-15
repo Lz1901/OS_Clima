@@ -101,9 +101,11 @@ function UnidadesPage() {
         title="Unidades"
         description={`${unidades.length} unidade(s) cadastrada(s)`}
         action={
-          <Button onClick={() => { setEditing(null); setOpen(true); }} disabled={!clientes.length}>
-            <Plus className="h-4 w-4 mr-2" /> Nova unidade
-          </Button>
+          <PermissionGate permission="unidades.create">
+            <Button onClick={() => { setEditing(null); setOpen(true); }} disabled={!clientes.length}>
+              <Plus className="h-4 w-4 mr-2" /> Nova unidade
+            </Button>
+          </PermissionGate>
         }
       />
 
