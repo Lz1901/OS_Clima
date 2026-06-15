@@ -276,9 +276,12 @@ function InviteDialog({ open, onClose }: { open: boolean; onClose: () => void })
       inviteFn({ data: { nome, email, role, appUrl: window.location.origin } }),
     onSuccess: (res: any) => {
       if (res?.emailSent === false && res?.inviteLink) {
-        toast.warning(
-          "Usuário criado, mas o envio do e-mail falhou. Compartilhe o link manualmente.",
-          { duration: 10000, description: res.inviteLink }
+        const errMsg = res.emailError ?? "Falha desconhecida no envio";
+        // Mostra o link no clipboard + toast persistente com o erro real.
+        navigator.clipboard?.writeText(res.inviteLink).catch(() => {});
+        toast.error(
+          `E-mail falhou: ${errMsg}. Link copiado para a área de transferência — envie manualmente ao funcionário.`,
+          { duration: 20000, description: res.inviteLink }
         );
       } else {
         toast.success("Convite enviado por e-mail");
