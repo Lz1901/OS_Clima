@@ -28,7 +28,9 @@ import { calcNext as calcNextDate } from "@/lib/pmoc";
 export const Route = createFileRoute("/pmocs/$pmocId")({
   component: () => (
     <AppLayout>
-      <PmocWizard />
+      <RequirePermission permission="pmoc.view">
+        <PmocWizard />
+      </RequirePermission>
     </AppLayout>
   ),
 });
