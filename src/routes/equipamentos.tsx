@@ -73,7 +73,21 @@ function EquipamentosPage() {
     mutationFn: async (form: any) => {
       const payload = { ...form, btus: form.btus ? Number(form.btus) : null };
       if (editing) {
-        const { error } = await supabase.from("equipamentos").update(payload).eq("id", editing.id);
+
+      console.log("EQUIPAMENTO FORM", form);
+
+      const{
+        id,
+        created_at,
+        updated_at,
+        unidades,
+        ...cleanPayload
+      } = payload;
+
+        const { error } = await supabase.from("equipamentos").update(cleanPayload).eq("id", editing.id);
+      
+      console.log("EQUIPAMENTO UPDATE ERROR", error);  
+
         if (error) throw error;
       } else {
         const { error } = await supabase.from("equipamentos").insert({ ...payload, company_id: profile!.company_id });

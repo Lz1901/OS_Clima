@@ -71,7 +71,20 @@ function UnidadesPage() {
   const save = useMutation({
     mutationFn: async (form: any) => {
       if (editing) {
-        const { error } = await supabase.from("unidades").update(form).eq("id", editing.id);
+        console.log("FORM COMPLETO", form);
+
+        const{
+          id,
+          created_at,
+          updated_at,
+          clientes,
+          ...payload
+        } = form;
+        
+        const { error } = await supabase.from("unidades").update(payload).eq("id", editing.id);
+        
+        console.log("FORM COMPLETO", form);  
+
         if (error) throw error;
       } else {
         const { error } = await supabase.from("unidades").insert({ ...form, company_id: profile!.company_id });

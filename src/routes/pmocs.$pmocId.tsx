@@ -135,13 +135,43 @@ function PmocWizard() {
   };
 
   const uploadFoto = async (equipId: string, itemId: string, file: File) => {
-    const path = `${profile!.company_id}/${pmocId}/${equipId}-${itemId}-${Date.now()}.${file.name.split(".").pop()}`;
-    const { error } = await supabase.storage.from("pmoc-fotos").upload(path, file);
-    if (error) { toast.error("Falha no upload"); return; }
-    // Store the storage path; signed URL is minted on demand for display/PDF.
-    setResposta(equipId, itemId, respostas[equipId]?.[itemId]?.valor ?? null, path);
+  try {
+    const companyId = profile?.company_id;
+
+    if (!companyId || !pmocId) {
+      console.error("IDs faltando", { companyId, pmocId });
+      toast.error("Contexto inválido para upload");
+      return;
+    }
+
+    const fileExt = file.name.split(".").pop();
+    const path = `${companyId}/${pmocId}/${equipId}-${itemId}-${Date.now()}.${fileExt}`;
+
+    const { data, error } = await supabase.storage
+      .from("pmoc-fotos")
+      .upload(path, file, {
+        upsert: true,
+      });
+
+    if (error) {
+      console.error("UPLOAD ERROR:", error);
+      toast.error(error.message);
+      return;
+    }
+
+    setResposta(
+      equipId,
+      itemId,
+      respostas[equipId]?.[itemId]?.valor ?? null,
+      data.path
+    );
+
     toast.success("Foto anexada");
-  };
+  } catch (err) {
+    console.error("UPLOAD CRASH:", err);
+    toast.error("Erro inesperado no upload");
+  }
+};
 
   // Persist current progress without finalizing (auto-save / resume support)
   const saveProgress = async (opts?: { silent?: boolean }) => {
