@@ -67,7 +67,6 @@ export const inviteFuncionario = createServerFn({ method: "POST" })
       nome: z.string().trim().min(2).max(120),
       email: z.string().trim().email().max(255),
       role: z.enum(ROLES),
-      appUrl: z.string().url().max(500),
     }).parse(input)
   )
   .handler(async ({ context, data }) => {
