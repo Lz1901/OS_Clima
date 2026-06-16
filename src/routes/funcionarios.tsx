@@ -133,6 +133,7 @@ function FuncionariosPage() {
 
 function TeamTab() {
   const qc = useQueryClient();
+  const { user } = useAuth();
   const fetchList = useServerFn(listFuncionarios);
   const { data, isLoading } = useQuery({
     queryKey: ["funcionarios"],
@@ -216,14 +217,16 @@ function TeamTab() {
                 >
                   <Pencil className="h-4 w-4 mr-1" /> Cargos
                 </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="text-destructive hover:text-destructive"
-                  onClick={() => setRemoveTarget({ userId: f.id, nome: f.nome })}
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
+                {f.id !== user?.id && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-destructive hover:text-destructive"
+                    onClick={() => setRemoveTarget({ userId: f.id, nome: f.nome })}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                )}
               </div>
             </div>
           ))}
