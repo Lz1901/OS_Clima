@@ -158,13 +158,20 @@ export const updateFuncionarioRoles = createServerFn({ method: "POST" })
       throw new Error("Você não pode remover sua própria função de administrador");
     }
 
-    await supabase.from("user_roles").delete().eq("user_id", data.userId).eq("company_id", companyId);
+    // Role management is authorized above (assertCompanyAdmin) and must bypass
+    // the RLS policy that forbids admins from granting the 'admin' role directly.
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    await supabaseAdmin
+      .from("user_roles")
+      .delete()
+      .eq("user_id", data.userId)
+      .eq("company_id", companyId);
     const rows = data.roles.map((role) => ({
       user_id: data.userId,
       company_id: companyId,
       role,
     }));
-    const { error } = await supabase.from("user_roles").insert(rows);
+    const { error } = await supabaseAdmin.from("user_roles").insert(rows);
     if (error) throw new Error(error.message);
     return { success: true };
   });
