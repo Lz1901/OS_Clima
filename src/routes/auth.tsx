@@ -66,7 +66,7 @@ function AuthPage() {
       return toast.error(error.message);
     }
     // Email de boas-vindas via Resend (não bloqueia o login).
-    welcomeFn({ data: { appUrl: window.location.origin } }).catch(() => {});
+    welcomeFn().catch(() => {});
     setLoading(false);
     toast.success("Conta criada! Você já pode entrar.");
     setTab("login");
