@@ -108,7 +108,7 @@ export const inviteFuncionario = createServerFn({ method: "POST" })
       throw new Error(pendingErr?.message ?? "Erro ao criar convite");
     }
 
-    const inviteLink = `${data.appUrl.replace(/\/$/, "")}/accept-invite?token=${pending.token}`;
+    const inviteLink = `${getTrustedAppOrigin()}/accept-invite?token=${pending.token}`;
 
     const { sendEmail, inviteTemplate } = await import("@/lib/email.server");
     const emailResult = await sendEmail({
