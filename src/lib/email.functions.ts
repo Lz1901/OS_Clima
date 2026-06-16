@@ -1,24 +1,28 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { getTrustedAppOrigin } from "@/lib/server-origin";
 
 // Public reset-password request: user is not authenticated yet.
 export const requestPasswordReset = createServerFn({ method: "POST" })
   .inputValidator((input) =>
     z.object({
       email: z.string().trim().email().max(255),
-      redirectTo: z.string().url().max(500),
     }).parse(input)
   )
   .handler(async ({ data }) => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { sendEmail, resetTemplate } = await import("@/lib/email.server");
 
+    // SECURITY: redirect target is derived server-side and never accepted from
+    // the client — prevents open-redirect via the password recovery email.
+    const redirectTo = `${getTrustedAppOrigin()}/reset-password`;
+
     // Always return success to avoid email enumeration.
     const { data: linkData, error } = await supabaseAdmin.auth.admin.generateLink({
       type: "recovery",
       email: data.email.toLowerCase(),
-      options: { redirectTo: data.redirectTo },
+      options: { redirectTo },
     });
 
     if (error || !linkData?.properties?.action_link) {
@@ -37,10 +41,7 @@ export const requestPasswordReset = createServerFn({ method: "POST" })
 // Welcome email — called by client after successful signup.
 export const sendWelcomeEmail = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input) =>
-    z.object({ appUrl: z.string().url().max(500) }).parse(input)
-  )
-  .handler(async ({ context, data }) => {
+  .handler(async ({ context }) => {
     const { supabase, userId } = context;
     const { data: profile } = await supabase
       .from("profiles")
@@ -62,7 +63,8 @@ export const sendWelcomeEmail = createServerFn({ method: "POST" })
       html: welcomeTemplate({
         nome: profile.nome ?? "",
         empresa: company?.nome ?? "sua empresa",
-        appUrl: data.appUrl,
+        // SECURITY: app URL is derived server-side — never accepted from client.
+        appUrl: getTrustedAppOrigin(),
       }),
     });
     return { success: result.ok };

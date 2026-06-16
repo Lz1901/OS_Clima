@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { getTrustedAppOrigin } from "@/lib/server-origin";
 
 const ROLES = ["admin", "tecnico", "financeiro", "supervisor"] as const;
 type AppRole = (typeof ROLES)[number];
@@ -66,7 +67,6 @@ export const inviteFuncionario = createServerFn({ method: "POST" })
       nome: z.string().trim().min(2).max(120),
       email: z.string().trim().email().max(255),
       role: z.enum(ROLES),
-      appUrl: z.string().url().max(500),
     }).parse(input)
   )
   .handler(async ({ context, data }) => {
@@ -108,7 +108,7 @@ export const inviteFuncionario = createServerFn({ method: "POST" })
       throw new Error(pendingErr?.message ?? "Erro ao criar convite");
     }
 
-    const inviteLink = `${data.appUrl.replace(/\/$/, "")}/accept-invite?token=${pending.token}`;
+    const inviteLink = `${getTrustedAppOrigin()}/accept-invite?token=${pending.token}`;
 
     const { sendEmail, inviteTemplate } = await import("@/lib/email.server");
     const emailResult = await sendEmail({
