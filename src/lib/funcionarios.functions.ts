@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { getTrustedAppOrigin } from "@/lib/server-origin";
 
 const ROLES = ["admin", "tecnico", "financeiro", "supervisor"] as const;
 type AppRole = (typeof ROLES)[number];
