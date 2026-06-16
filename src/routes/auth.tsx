@@ -79,7 +79,6 @@ function AuthPage() {
       await resetFn({
         data: {
           email: resetEmail,
-          redirectTo: `${window.location.origin}/reset-password`,
         },
       });
       toast.success("Se o e-mail estiver cadastrado, enviaremos um link de recuperação.");
