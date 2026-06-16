@@ -276,7 +276,7 @@ function InviteDialog({ open, onClose }: { open: boolean; onClose: () => void })
 
   const mut = useMutation({
     mutationFn: () =>
-      inviteFn({ data: { nome, email, role, appUrl: window.location.origin } }),
+      inviteFn({ data: { nome, email, role } }),
     onSuccess: (res: any) => {
       if (res?.emailSent === false && res?.inviteLink) {
         const errMsg = res.emailError ?? "Falha desconhecida no envio";
