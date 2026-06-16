@@ -368,6 +368,8 @@ function EditRolesDialog({
   onClose: () => void;
 }) {
   const qc = useQueryClient();
+  const { user } = useAuth();
+  const isSelf = user?.id === target.userId;
   const updateFn = useServerFn(updateFuncionarioRoles);
   const [selected, setSelected] = useState<Set<Role>>(
     new Set(target.roles.filter((r) => (ROLES as readonly string[]).includes(r)) as Role[])
@@ -386,6 +388,11 @@ function EditRolesDialog({
   });
 
   const toggle = (r: Role) => {
+    // Bloqueia o próprio admin de remover seu cargo de administrador
+    if (isSelf && r === "admin" && selected.has(r)) {
+      toast.error("Você não pode remover sua própria função de administrador");
+      return;
+    }
     const next = new Set(selected);
     if (next.has(r)) next.delete(r);
     else next.add(r);
@@ -403,18 +410,29 @@ function EditRolesDialog({
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-3 py-2">
-          {ROLES.map((r) => (
-            <label
-              key={r}
-              className="flex items-center gap-3 p-3 rounded-md border cursor-pointer hover:bg-accent"
-            >
-              <Checkbox
-                checked={selected.has(r)}
-                onCheckedChange={() => toggle(r)}
-              />
-              <span className="text-sm font-medium">{ROLE_LABEL[r]}</span>
-            </label>
-          ))}
+          {ROLES.map((r) => {
+            const lockSelfAdmin = isSelf && r === "admin";
+            return (
+              <label
+                key={r}
+                className={`flex items-center gap-3 p-3 rounded-md border ${
+                  lockSelfAdmin ? "opacity-60 cursor-not-allowed" : "cursor-pointer hover:bg-accent"
+                }`}
+              >
+                <Checkbox
+                  checked={selected.has(r)}
+                  disabled={lockSelfAdmin}
+                  onCheckedChange={() => toggle(r)}
+                />
+                <span className="text-sm font-medium">{ROLE_LABEL[r]}</span>
+                {lockSelfAdmin && (
+                  <span className="text-xs text-muted-foreground ml-auto">
+                    Você não pode remover seu próprio admin
+                  </span>
+                )}
+              </label>
+            );
+          })}
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={onClose}>
