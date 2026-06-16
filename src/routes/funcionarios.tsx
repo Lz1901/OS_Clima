@@ -133,6 +133,7 @@ function FuncionariosPage() {
 
 function TeamTab() {
   const qc = useQueryClient();
+  const { user } = useAuth();
   const fetchList = useServerFn(listFuncionarios);
   const { data, isLoading } = useQuery({
     queryKey: ["funcionarios"],
