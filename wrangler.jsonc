@@ -5,10 +5,5 @@
   "compatibility_flags": [
     "nodejs_compat"
   ],
-  "main": "src/server.ts",
-  "alias": {
-    "#tanstack-start-entry": "./src/start.ts",
-    "tanstack-start-manifest:v": "./dist/server/manifest.js",
-    "tanstack-start-injected-head-scripts:v": "./dist/server/injected-head-scripts.js"
-  }
+  "main": "./dist/server/server.js"
 }
