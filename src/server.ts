@@ -71,7 +71,11 @@ export default {
 
     const url = new URL(request.url);
 
-    if (url.pathname.startsWith("/assets/")) {
+    // Serve arquivos estáticos do TanStack Client
+    if (
+      url.pathname.startsWith("/assets/") ||
+      url.pathname === "/favicon.ico"
+    ) {
       return env.ASSETS.fetch(request);
     }
 
