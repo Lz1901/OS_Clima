@@ -5,6 +5,7 @@
   "compatibility_flags": ["nodejs_compat"],
   "main": "src/server.ts",
   "alias": {
-    "#tanstack-router-entry": "./src/routeTree.gen.ts"
+    "#tanstack-router-entry": "./src/routeTree.gen.ts",
+    "#tanstack-start-entry": "./src/start.ts"
   }
 }
