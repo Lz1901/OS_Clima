@@ -75,10 +75,29 @@ export async function generatePmocPdf(data: PmocPdfData): Promise<Blob> {
 
   const primary = colorHex(data.company.cor_primaria || "#2563eb");
 
+  const footerReserve = 12; // space reserved for footer at bottom
   const ensure = (need: number) => {
-    if (y + need > pageH - margin) {
+    if (y + need > pageH - margin - footerReserve) {
       doc.addPage();
       y = margin;
+    }
+  };
+
+  const writableBottom = () => pageH - margin - footerReserve;
+
+  const sanitizePdfText = (text: string) =>
+    text
+      .replace(/\s+/g, " ")
+      .replace(/✓/g, "OK")
+      .replace(/✗/g, "Nao realizado")
+      .trim();
+
+  const drawWrappedText = (text: string, x: number, maxWidth: number, lineHeight = 5) => {
+    const lines = doc.splitTextToSize(sanitizePdfText(text), maxWidth) as string[];
+    for (const line of lines) {
+      ensure(lineHeight + 1);
+      doc.text(line, x, y + lineHeight - 1, { maxWidth });
+      y += lineHeight;
     }
   };
 
@@ -158,56 +177,64 @@ export async function generatePmocPdf(data: PmocPdfData): Promise<Blob> {
 
     doc.setFont("helvetica", "normal").setFontSize(9);
     for (const r of eq.respostas) {
-      ensure(12);
       const valor =
         r.tipo_campo === "checkbox"
-          ? r.valor === "true" ? "✓ OK" : "✗ Não realizado"
+          ? r.valor === "true" ? "OK" : "Não realizado"
           : (r.valor ?? "—");
       const cat = r.categoria ? `[${r.categoria}] ` : "";
       const text = `${cat}${r.label}: ${valor}`;
-      const split = doc.splitTextToSize(text, pageW - margin * 2 - 15);
-      
+      const textX = margin + 2;
+      const textWidth = r.foto_url ? pageW - margin * 2 - 20 : pageW - margin * 2 - 4;
+      const rowStartY = y;
+      const imageY = y;
+
       doc.setFont("helvetica", "normal").setFontSize(9);
-      doc.text(split, margin + 2, y + 4);
+      drawWrappedText(text, textX, textWidth, 5);
 
       if (r.foto_url) {
         const fotoUrl = await resolveAssetUrl("pmoc-fotos", r.foto_url);
         const itemFoto = fotoUrl ? await loadImage(fotoUrl) : null;
         if (itemFoto) {
           try {
-            // Add a small thumbnail next to the item
-            doc.addImage(itemFoto, "JPEG", pageW - margin - 12, y, 10, 10);
+            const imageFitsCurrentPage = imageY + 10 <= writableBottom();
+            if (imageFitsCurrentPage && imageY >= rowStartY) {
+              doc.addImage(itemFoto, "JPEG", pageW - margin - 12, imageY, 10, 10);
+              y = Math.max(y, rowStartY + 12);
+            }
           } catch { /* noop */ }
         }
       }
-      
-      y += Math.max(split.length * 5, r.foto_url ? 12 : 5);
+
+      y += 1;
     }
     y += 4;
   }
 
+
   // Assinaturas
-  ensure(50);
+  ensure(12);
   y += 4;
   doc.setFont("helvetica", "bold").setFontSize(11);
   doc.text("Assinaturas", margin, y);
   y += 4;
   const sigW = (pageW - margin * 2 - 8) / 2;
+  const sigH = 32;
   let sigX = margin;
-  let sigRowY = y;
   for (const sig of data.assinaturas) {
+    if (sigX === margin) ensure(sigH + 4);
     const sigUrl = await resolveAssetUrl("assinaturas", sig.imagem_url);
     const img = sigUrl ? await loadImage(sigUrl) : null;
     doc.setDrawColor(226, 232, 240);
-    doc.roundedRect(sigX, sigRowY, sigW, 32, 2, 2, "S");
+    doc.roundedRect(sigX, y, sigW, sigH, 2, 2, "S");
     if (img) {
-      try { doc.addImage(img, "PNG", sigX + 2, sigRowY + 2, sigW - 4, 22); } catch { /* noop */ }
+      try { doc.addImage(img, "PNG", sigX + 2, y + 2, sigW - 4, 22); } catch { /* noop */ }
     }
     doc.setFont("helvetica", "normal").setFontSize(8);
-    doc.text(`${sig.tipo === "tecnico" ? "Técnico" : "Cliente"}: ${sig.nome}`, sigX + 2, sigRowY + 30);
+    doc.text(`${sig.tipo === "tecnico" ? "Técnico" : "Cliente"}: ${sig.nome}`, sigX + 2, y + 30);
     sigX += sigW + 8;
-    if (sigX + sigW > pageW - margin) { sigX = margin; sigRowY += 38; }
+    if (sigX + sigW > pageW - margin) { sigX = margin; y += sigH + 6; }
   }
+
 
   // Footer
   const pages = doc.getNumberOfPages();
