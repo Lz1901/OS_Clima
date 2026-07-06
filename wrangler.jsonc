@@ -4,6 +4,13 @@
   "compatibility_date": "2025-09-24",
   "compatibility_flags": ["nodejs_compat"],
   "main": "src/server.ts",
+  "conditions": [
+    "worker",
+    "workerd",
+    "browser",
+    "default",
+    "style"
+  ],
   "alias": {
     "#tanstack-router-entry": "./src/routeTree.gen.ts",
     "#tanstack-start-entry": "./src/start.ts"
