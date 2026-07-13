@@ -16,7 +16,8 @@ type Company = {
   endereco?: string | null;
   telefone?: string | null;
   email?: string | null;
-  crea?: string | null;
+  crt?: string | null;
+  crea?: string | null; // compatibilidade legado
   responsavel_tecnico?: string | null;
   logo_url?: string | null;
   cor_primaria?: string | null;
@@ -242,7 +243,7 @@ export async function generatePmocPdf(data: PmocPdfData): Promise<Blob> {
     doc.setPage(i);
     doc.setFont("helvetica", "normal").setFontSize(8).setTextColor(100, 116, 139);
     doc.text(
-      `${data.company.nome} · CREA ${data.company.crea ?? "—"} · Resp. Téc.: ${data.company.responsavel_tecnico ?? "—"}`,
+      `${data.company.nome} · CRT ${data.company.crt ?? data.company.crea ?? "—"} · Resp. Téc.: ${data.company.responsavel_tecnico ?? "—"}`,
       margin,
       pageH - 6
     );
